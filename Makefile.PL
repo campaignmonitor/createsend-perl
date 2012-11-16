@@ -8,3 +8,5 @@ requires	JSON		2.27
 requires	LWP::UserAgent	5.835
 requires	Carp		1.11
 requires	Params::Util	1.01
+
+repository 'https://github.com/campaignmonitor/createsend-perl.git';
