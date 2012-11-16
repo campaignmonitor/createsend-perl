@@ -46,7 +46,7 @@ SKIP: {
 	my $campaign_id = $created_campaign->{response};
 
 	my %campaign_send = (
-		  'SendDate'          => '2011-12-01 00:01',
+		  'SendDate'          => '2012-11-15 00:01',
 		  'ConfirmationEmail' => 'myemail@mydomain.com',
 		  'campaignid'        => $campaign_id
 	);

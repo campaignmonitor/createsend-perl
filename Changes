@@ -1,3 +1,6 @@
+1.02 Fri 16 Nov 2013
+	- Added support to manage members (ie. Administrators, People)
+
 0.05 Wed 19 October 2011
 	- Fixed an error with the HTTP realm and other issues associated with this change.
 

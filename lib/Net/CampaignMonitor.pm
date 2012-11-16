@@ -1,11 +1,13 @@
 package Net::CampaignMonitor;
 
+use strict;
+
 use 5.008005;
 use REST::Client;
 use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
 use JSON;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 sub new	{
 		
@@ -163,6 +165,116 @@ sub account_apikey {
 	
 	return $results;
 }
+
+
+
+
+sub account_addadmin{ 
+	
+	my $self = shift;
+	my (%request) = @_;
+
+	my $json_request = encode_json \%request;
+	my $results;
+	
+	$self->{client}->POST($self->{protocol}.$self->{realm}."/api/v3/admins.".$self->{format}, $json_request);
+	
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+
+sub account_updateadmin{
+	
+	my $self = shift;
+	my (%request) = @_;
+	my $email = $request{email};
+	
+	delete $request{email};
+	
+	my $json_request = encode_json \%request;
+	my $results;
+	
+	$self->{client}->PUT($self->{protocol}.$self->{realm}."/api/v3/admins.".$self->{format}."?email=".$email, $json_request);
+		
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+sub account_getadmins {
+	
+	my $self = shift;
+	my $results;
+	$self->{client}->GET($self->{protocol}.$self->{realm}."/api/v3/admins.".$self->{format});
+	
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+
+sub account_getadmin{
+	
+	my $self = shift;
+	my $email = $_[0];
+	my $results;
+		
+	$self->{client}->GET($self->{protocol}.$self->{realm}."/api/v3/admins.".$self->{format}."?email=".$email);
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	return $results;
+}
+
+sub account_deleteadmin {
+	
+	my $self = shift;
+	my $email = $_[0];
+	my $results;
+		
+	$self->{client}->DELETE($self->{protocol}.$self->{realm}."/api/v3/admins.".$self->{format}."?email=".$email);
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+sub account_setprimarycontact {
+
+	my $self = shift;
+	my $email = $_[0];
+	my $results;
+	
+	$self->{client}->PUT($self->{protocol}.$self->{realm}."/api/v3/primarycontact.".$self->{format}."?email=".$email);
+		
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+sub account_getprimarycontact{
+	
+	my $self = shift;
+	my $results;
+		
+	$self->{client}->GET($self->{protocol}.$self->{realm}."/api/v3/primarycontact.".$self->{format});
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	return $results;
+}
+
 
 sub client_clientid {
 	
@@ -367,6 +479,124 @@ sub client_delete {
 	$results->{'code'} = $self->{client}->responseCode();
 	$results->{'headers'} = $self->{client}->responseHeaders();
 	
+	return $results;
+}
+
+
+sub client_addperson { 
+	
+	my $self = shift;
+	my (%request) = @_;
+	my $client_id = $request{clientid};
+	
+	delete $request{clientid};
+	my $json_request = encode_json \%request;
+	my $results;
+	
+	$self->{client}->POST($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/people.".$self->{format}, $json_request);
+	
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+
+sub client_updateperson {
+	
+	my $self = shift;
+	my (%request) = @_;
+	my $client_id = $request{clientid};
+	my $email = $request{email};
+	
+	delete $request{clientid};
+	delete $request{email};
+	
+	my $json_request = encode_json \%request;
+	my $results;
+	
+	$self->{client}->PUT($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email, $json_request);
+		
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+sub client_getpeople {
+	
+	my $self = shift;
+	my $client_id = $_[0];
+	my $results;
+	$self->{client}->GET($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/people.".$self->{format});
+	
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+sub client_getperson{
+	
+	my $self = shift;
+	my (%request) = @_;
+	my $client_id = $request{clientid};
+	my $email = $request{email};
+	my $results;
+		
+	$self->{client}->GET($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email);
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	return $results;
+}
+
+sub client_deleteperson {
+	
+	my $self = shift;
+	my (%request) = @_;
+	my $client_id = $request{clientid};
+	my $email = $request{email};
+	my $results;
+		
+	$self->{client}->DELETE($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email);
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+sub client_setprimarycontact {
+	
+	my $self = shift;
+	my (%request) = @_;
+	my $client_id = $request{clientid};
+	my $email = $request{email};	
+	my $results;
+	
+	$self->{client}->PUT($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/primarycontact.".$self->{format}."?email=".$email);
+		
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
+sub client_getprimarycontact{
+	
+	my $self = shift;
+	my $client_id = $_[0];
+	my $results;
+		
+	$self->{client}->GET($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/primarycontact.".$self->{format});
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
 	return $results;
 }
 
@@ -1341,6 +1571,58 @@ L<Getting valid timezones|http://www.campaignmonitor.com/api/account/#getting_ti
 L<Getting current date|http://www.campaignmonitor.com/api/account/#getting_systemdate>
 
 	my $systemdate = $cm->account_systemdate();
+	
+	
+	
+=head2 account_addadmin 
+
+L<Adds a new administrator to the account. An invitation will be sent to the new administrator via email.|http://www.campaignmonitor.com/api/account/#adding_an_admin>
+
+	my $person_email = $cm->account_addadmin((
+		'EmailAddress'         	=> "jane\@example.com",
+		'Name'                 	=> "Jane Doe"
+		));
+	
+=head2 account_updateadmin 
+
+L<Updates the email address and/or name of an administrator.|http://www.campaignmonitor.com/api/account/#updating_an_admin>
+
+	my $admin_email = $cm->account_updateadmin((		
+		'email'					=> "jane\@example.com",
+		'EmailAddress'         	=> "jane.new\@example.com",
+		'Name'                 	=> "Jane Doeman"
+		));
+
+=head2 account_getadmins
+
+L<Contains a list of all (active or invited) administrators associated with a particular account.|http://www.campaignmonitor.com/api/account/#getting_account_admins>
+
+	my $admins = $cm->account_getadmins();
+	
+=head2 account_getadmin
+
+L<Returns the details of a single administrator associated with an account. |http://www.campaignmonitor.com/api/account/#getting_account_admin>
+
+	my $admin_details = $cm->account_getadmin($email);	
+	
+=head2 account_deleteadmin
+
+L<Changes the status of an active administrator to a deleted administrator.|http://www.campaignmonitor.com/api/account/#deleting_an_admin>
+
+	my $result = $cm->account_deleteadmin($admin_email);	
+	
+	
+=head2 admin_setprimarycontact
+
+L<Sets the primary contact for the account to be the administrator with the specified email address.|http://www.campaignmonitor.com/api/account/#setting_primary_contact>
+
+	my $primarycontact_email = $cm->account_setprimarycontact($admin_email);		
+
+=head2 account_getprimarycontact
+
+L<Returns the email address of the administrator who is selected as the primary contact for this account.|http://www.campaignmonitor.com/api/account/#getting_primary_contact>
+
+	my $primarycontact_email = $cm->account_getprimarycontact();		
 
 =head2 campaigns
 
@@ -1553,7 +1835,7 @@ Setting username and password
 		'clientid'    => $client_id,
 		'AccessLevel' => '23',
 		'Username'    => 'jdoe',
-		'Password'    => 'password',
+		'Password'    => 'safepassword',
 	));
 
 =head2 client_setpaygbilling
@@ -1587,6 +1869,73 @@ L<Setting monthly billing|http://www.campaignmonitor.com/api/clients/#setting_mo
 L<Deleting a client|http://www.campaignmonitor.com/api/clients/#deleting_a_client>
 
 	my $client_deleted = $cm->client_delete($client_id);
+	
+	
+=head2 client_addperson 
+
+L<Adds a new person to the client.|http://www.campaignmonitor.com/api/clients/#adding_a_person>
+
+	my $person_email = $cm->client_addperson((
+		'clientid'             	=> $client_id,
+		'EmailAddress'         	=> "joe\@example.com",
+		'Name'                 	=> "Joe Doe",
+		'AccessLevel'         	=> 23,
+		'Password'          	=> "safepassword"
+		));
+	
+=head2 client_updateperson 
+
+L<Updates any aspect of a person including their email address, name and access level..|http://www.campaignmonitor.com/api/clients/#updating_a_person>
+
+	my $person_email = $cm->client_updateperson((
+		'clientid'             	=> $client_id,
+		'email'         		=> "joe\@example.com",
+		'EmailAddress'         	=> "joe.new\@example.com",
+		'Name'                 	=> "Joe Doe",
+		'AccessLevel'         	=> 23,
+		'Password'          	=> "safepassword"
+		));
+
+=head2 client_getpeople
+
+L<Contains a list of all (active or invited) people associated with a particular client.|http://www.campaignmonitor.com/api/clients/#getting_client_people>
+
+	my $client_access-settings = $cm->client_getpeople($client_id);
+	
+=head2 client_getperson
+
+L<Returns the details of a single person associated with a client. |http://www.campaignmonitor.com/api/clients/#getting_client_person>
+
+	my $person_details = $cm->client_getperson((
+		'clientid'          => $client_id,
+		'email'         	=> "joe\@example.com",
+		));	
+	
+=head2 client_deleteperson
+
+L<Contains a list of all (active or invited) people associated with a particular client.|http://www.campaignmonitor.com/api/clients/#deleting_a_person>
+
+	my $result = $cm->client_deleteperson((
+		'clientid'          => $client_id,
+		'email'         	=> "joe\@example.com",
+		));	
+	
+	
+=head2 client_setprimarycontact
+
+L<Sets the primary contact for the client to be the person with the specified email address.|http://www.campaignmonitor.com/api/clients/#setting_primary_contact>
+
+	my $primarycontact_email = $cm->client_setprimarycontact((
+		'clientid'          => $client_id,
+		'email'         	=> "joe\@example.com",
+		));		
+
+=head2 client_getprimarycontact
+
+L<Returns the email address of the person who is selected as the primary contact for this client.|http://www.campaignmonitor.com/api/clients/#getting_primary_contact>
+
+	my $primarycontact_email = $cm->client_getprimarycontact($client_id);		
+		
 	
 =head2 lists
 
@@ -1994,13 +2343,19 @@ If you do not do this almost all of the tests will be skipped.
 
 Not quite a bug. This module uses L<REST::Client>. REST::Client fails to install properly on Windows due to this L<bug|https://rt.cpan.org/Public/Bug/Display.html?id=65803>. You will need to make REST::Client install without running tests to install it.
 
+=head1 MAINTAINER
+
+Campaign Monitor, E<lt>support@campaignmonitor.com<gt>
+
 =head1 AUTHOR
 
 Jeffery Candiloro <jeffery@cpan.org>
 
 =head1 COPYRIGHT
 
-Copyright 2011 Jeffery Candiloro
+Copyright (c) 2012, Campaign Monitor  E<lt>support@campaignmonitor.com<gt>. All rights reserved.
+
+Copyright (c) 2011, Jeffery Candiloro  E<lt>jeffery@cpan.org<gt>.  All rights reserved.
 
 This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 

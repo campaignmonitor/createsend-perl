@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 13;
+use Test::More tests => 19;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -18,13 +18,21 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 		  });
 }
 
+# TODO remove:
+$api_key = '50fb4bb7084422c3b63b2ab018e0b6c5';
+
+	$cm = Net::CampaignMonitor->new({
+			secure  => 1, 
+			api_key => $api_key,
+		  });
+
 SKIP: {
 	skip 'Invalid API Key supplied', 13 if $api_key eq '';
 
 	my %new_client = (
 		'CompanyName'  => "ACME Limited",
-		'ContactName'  => "John Doe",
-		'EmailAddress' => "john\@example.com",
+		'ContactName'  => "Joe Doe",
+		'EmailAddress' => "joe\@example.com", 
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney"
 	);
@@ -62,8 +70,8 @@ SKIP: {
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney",
 		'clientid'     => $client_id
-	);
-
+	);		
+		
 	my %payg = (
 		'Currency'               => 'AUD',
 		'CanPurchaseCredits'     => 'false',
@@ -94,4 +102,33 @@ SKIP: {
 	ok( $cm->client_setaccess(%basic_access_settings)->{code} eq '200', 'Set client basic access settings' );
 	ok( $cm->client_setpaygbilling(%payg)->{code} eq '200', 'Set client PAYG billing' );
 	ok( $cm->client_setmonthlybilling(%monthly)->{code} eq '200', 'Set client monthly billing' );
+	
+	my %new_person = (
+		'clientid'     	=> $client_id,
+		'EmailAddress'  => "joe.person\@example.com",
+		'Name'          => "Joe Doeman",
+		'AccessLevel'   => 23,
+		'Password'      => "safepassword"
+	);
+
+	my %update_person = (
+		'clientid'      => $client_id,
+		'email'         => "joe.person\@example.com",
+		'EmailAddress'  => "joe.new\@example.com",
+		'Name'          => "Joe Doeman",
+		'AccessLevel'   => 23,
+		'Password'      => "safepassword"
+	);
+	
+	my %person = (
+		'clientid'      => $client_id,
+		'email'         => "joe.new\@example.com",
+	);
+	
+	ok( $cm->client_addperson(%new_person)->{code} eq '201', 'Added new person' );
+	ok( $cm->client_updateperson(%update_person)->{code} eq '200', 'Updated person' );
+	ok( $cm->client_getpeople($client_id)->{code} eq '200', 'Got people' );	
+	ok( $cm->client_getperson(%person)->{code} eq '200', 'Got person' );	
+	ok( $cm->client_getprimarycontact($client_id)->{code} eq '200', 'Got person primary contact' );
+	ok( $cm->client_deleteperson(%person)->{code} eq '200', 'Delete person' );	
 }
