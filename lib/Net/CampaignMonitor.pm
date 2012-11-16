@@ -1489,7 +1489,7 @@ Net::CampaignMonitor - A Perl wrapper to the Campaign Monitor API.
 
 =head1 VERSION
 
-This documentation refers to version 0.01.
+This documentation refers to version 1.02.
 
 =head1 SYNOPSIS
 
