@@ -1,0 +1,15 @@
+0.05 Wed 19 October 2011
+	- Fixed an error with the HTTP realm and other issues associated with this change.
+
+0.04 Fri 04 March 2011
+	- Modified the tests to require the user to enter the API key.
+
+0.03 Fri 04 March 2011
+	- Added comment to the POD regarding test failure due to CM API limits.
+	- Removed apikey test.
+
+0.02 Wed 02 March 2011
+	- Corrected some errors in the POD.
+
+0.01 Tue 01 Mar 2011
+	- Creating initial implementation.
