@@ -36,11 +36,12 @@ Samples for each of the methods and further documentation is available on CPAN o
 3. Ensure that the build passes, by running:
 
     ```
+    export CAMPAIGN_MONTIOR_API_KEY={Your API key to use for running the tests}
     cpanm --quiet --installdeps --notest .
     perl Makefile.PL && make test
     ```
 
-    (CI runs on: `5.10`, `5.12`, `5.14`, and `5.16`).
+    CI runs on: `5.10`, `5.12`, `5.14`, and `5.16`.
 
 4. It should go without saying, but do not increment the version number in your commits.
 5. Submit a pull request.
