@@ -4,3 +4,6 @@ perl:
   - "5.14"
   - "5.12"
   - "5.10"
+env:
+  global:
+    - secure: "A1Xx/oZoxIkpgdfIyIOGCl5IlLJkKXtArFLHCtWnsGzqcrgeRIC72k/1uQ+P\nBEmg9X2ohC4/VhrIHA6Pn33/Kk1fLF3mr1enucQVDtQBbRFakGCtzP7pYrEr\n1hrzSEDNySe0vrceingR7TmVwjd4rYd9mUv7DDDtbt8eANl7UGg="
