@@ -18,21 +18,11 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 		  });
 }
 
-# TODO remove:
-$api_key = '50fb4bb7084422c3b63b2ab018e0b6c5';
-
-	$cm = Net::CampaignMonitor->new({
-			secure  => 1, 
-			api_key => $api_key,
-		  });
-
 SKIP: {
 	skip 'Invalid API Key supplied', 13 if $api_key eq '';
 
 	my %new_client = (
 		'CompanyName'  => "ACME Limited",
-		'ContactName'  => "Joe Doe",
-		'EmailAddress' => "joe\@example.com", 
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney"
 	);
