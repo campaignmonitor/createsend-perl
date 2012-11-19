@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 19;
+use Test::More tests => 18;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -55,13 +55,11 @@ SKIP: {
 
 	my %replace_client = (
 		'CompanyName'  => "ACME Limited",
-		'ContactName'  => "John Doe",
-		'EmailAddress' => "john\@example.com",
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney",
 		'clientid'     => $client_id
 	);		
-		
+
 	my %payg = (
 		'Currency'               => 'AUD',
 		'CanPurchaseCredits'     => 'false',
@@ -88,11 +86,9 @@ SKIP: {
 	ok( $cm->client_suppressionlist(%paging_info)->{code} eq '200', 'Got client suppression list' );
 	ok( $cm->client_templates($client_id)->{code} eq '200', 'Got client templates' );
 	ok( $cm->client_setbasics(%replace_client)->{code} eq '200', 'Set client basics' );
-	ok( $cm->client_setaccess(%access_settings)->{code} eq '200', 'Set client access settings' );
-	ok( $cm->client_setaccess(%basic_access_settings)->{code} eq '200', 'Set client basic access settings' );
 	ok( $cm->client_setpaygbilling(%payg)->{code} eq '200', 'Set client PAYG billing' );
 	ok( $cm->client_setmonthlybilling(%monthly)->{code} eq '200', 'Set client monthly billing' );
-	
+
 	my %new_person = (
 		'clientid'     	=> $client_id,
 		'EmailAddress'  => "joe.person\@example.com",
@@ -109,16 +105,30 @@ SKIP: {
 		'AccessLevel'   => 23,
 		'Password'      => "safepassword"
 	);
-	
+
 	my %person = (
 		'clientid'      => $client_id,
 		'email'         => "joe.new\@example.com",
 	);
-	
+
+	my %another_person = (
+		'clientid'     	=> $client_id,
+		'EmailAddress'  => "another.person\@example.com",
+		'Name'          => "Another Person",
+		'AccessLevel'   => 23,
+		'Password'      => "safepassword"
+	);
+
+	my %delete_person = (
+		'clientid'      => $client_id,
+		'email'         => "another.person\@example.com",
+	);
+
 	ok( $cm->client_addperson(%new_person)->{code} eq '201', 'Added new person' );
 	ok( $cm->client_updateperson(%update_person)->{code} eq '200', 'Updated person' );
-	ok( $cm->client_getpeople($client_id)->{code} eq '200', 'Got people' );	
-	ok( $cm->client_getperson(%person)->{code} eq '200', 'Got person' );	
+	ok( $cm->client_getpeople($client_id)->{code} eq '200', 'Got people' );
+	ok( $cm->client_getperson(%person)->{code} eq '200', 'Got person' );
 	ok( $cm->client_getprimarycontact($client_id)->{code} eq '200', 'Got person primary contact' );
-	ok( $cm->client_deleteperson(%person)->{code} eq '200', 'Delete person' );	
+	ok( $cm->client_addperson(%another_person)->{code} eq '201', 'Added new person' );
+	ok( $cm->client_deleteperson(%delete_person)->{code} eq '200', 'Delete person' );
 }
