@@ -1,4 +1,8 @@
 language: perl
+env:
+  secure: "KYCwN139LUiLsgBOmoXyOsEPYTKSNnxwD+7lfXaM7AgCsLBk5H86sq5Y6AWr\neT9rwBXLpM50OTEUQfmDQRkJUwzL1CKMNdtAFbDehIWyX+QYLLsgwP6yiM3A\n2nV5UKNwjH0c0EFnWgy80qootvtQIpJ1r9PQJ4lqGj61WItRfjw="
+perl:
+  - "5.14"
 matrix:
   include:
     - perl: "5.10"
@@ -7,9 +11,6 @@ matrix:
     - perl: "5.12"
       env:
         secure: "A1Xx/oZoxIkpgdfIyIOGCl5IlLJkKXtArFLHCtWnsGzqcrgeRIC72k/1uQ+P\nBEmg9X2ohC4/VhrIHA6Pn33/Kk1fLF3mr1enucQVDtQBbRFakGCtzP7pYrEr\n1hrzSEDNySe0vrceingR7TmVwjd4rYd9mUv7DDDtbt8eANl7UGg="
-    - perl: "5.14"
-      env:
-        secure: "KYCwN139LUiLsgBOmoXyOsEPYTKSNnxwD+7lfXaM7AgCsLBk5H86sq5Y6AWr\neT9rwBXLpM50OTEUQfmDQRkJUwzL1CKMNdtAFbDehIWyX+QYLLsgwP6yiM3A\n2nV5UKNwjH0c0EFnWgy80qootvtQIpJ1r9PQJ4lqGj61WItRfjw="
     - perl: "5.16"
       env:
         secure: "Q4kihl9gGN9edekbhuUraNnO/3KDhr66Wsejr7/xeyBTvseMm+8I1iHQlb64\nLtqu/R4GeSu93tGc5uFqMzXZmOuhAiWpfAXSlY+uZJszXdba5Jvpyr5jaTpd\nhd4HEYdRj1M2SpmwBvaWKryjvY1NnpAupf9Wi3US8hGMI9WsV1w="
