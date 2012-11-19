@@ -8,7 +8,7 @@ matrix:
       env:
         secure: "A1Xx/oZoxIkpgdfIyIOGCl5IlLJkKXtArFLHCtWnsGzqcrgeRIC72k/1uQ+P\nBEmg9X2ohC4/VhrIHA6Pn33/Kk1fLF3mr1enucQVDtQBbRFakGCtzP7pYrEr\n1hrzSEDNySe0vrceingR7TmVwjd4rYd9mUv7DDDtbt8eANl7UGg="
     - perl: "5.14"
-      ebv:
+      env:
         secure: "KYCwN139LUiLsgBOmoXyOsEPYTKSNnxwD+7lfXaM7AgCsLBk5H86sq5Y6AWr\neT9rwBXLpM50OTEUQfmDQRkJUwzL1CKMNdtAFbDehIWyX+QYLLsgwP6yiM3A\n2nV5UKNwjH0c0EFnWgy80qootvtQIpJ1r9PQJ4lqGj61WItRfjw="
     - perl: "5.16"
       env:
