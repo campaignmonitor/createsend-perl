@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {	
-	skip 'Invalid API Key supplied', 4 if $api_key eq '';
+	skip 'Invalid API Key supplied', 10 if $api_key eq '';
 		  
 	ok( $cm->account_clients()->{'code'} eq '200', 'Clients' );
 
