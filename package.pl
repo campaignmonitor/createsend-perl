@@ -28,7 +28,7 @@ if (-e "../$packageName")	{
 `mkdir ../$packageName`;
 `cp -r * ../$packageName/.`;
 
-`cd .. && tar cvPf $packageName.tar $packageName --exclude .git --exclude .gitignore --exclude .travis.yml --exclude release.pl; gzip $packageName.tar`;
+`cd .. && tar cvPf $packageName.tar $packageName --exclude .git --exclude .gitignore --exclude .travis.yml --exclude package.pl; gzip $packageName.tar`;
 `rm -rf ../$packageName`;
 
 print "Successfully created distribution ../$packageName.tar.gz" 
