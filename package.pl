@@ -8,11 +8,15 @@ my $version = $ARGV[0];
 
 # ensure that the version number in the module is the same as passed argument
 my $moduleVersion = `grep VERSION ./lib/Net/CampaignMonitor.pm`;
-
-
 if ($moduleVersion !~ m/$version/) {
 	print ('Error: $VERSION set in Net/CampaignMonitor.pm is not version '.$version);
 	exit;
+}
+
+# show warning if Changes file hasn't been updated with version description
+my $changeDesc = `grep $version ./Changes`;
+if ($changeDesc !~ m/$version/) {
+	print ('Warning: Changes file does not contain version '.$version."\n");
 }
 
 my $package = "Net-CampaignMonitor";
