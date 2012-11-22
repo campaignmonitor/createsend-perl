@@ -1,3 +1,6 @@
+v1.20.1 Thu 22 Nov 2012
+	- Moved to dotted decimal version number.
+
 1.02 Fri 16 Nov 2012
 	- Added support to manage members (ie. Administrators, People)
 

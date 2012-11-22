@@ -7,7 +7,7 @@ use REST::Client;
 use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
 use JSON;
 
-our $VERSION = '1.02';
+use version; our $VERSION = version->declare("v1.20.1");
 
 sub new	{
 		
@@ -1542,8 +1542,6 @@ L<Creating a client|http://www.campaignmonitor.com/api/clients/#creating_a_clien
 
 	my $client = $cm->account_clients((
 		'CompanyName'  => "ACME Limited",
-		'ContactName'  => "John Doe",
-		'EmailAddress' => "john\@example.com",
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney"
 	));
@@ -1812,8 +1810,6 @@ L<Setting basic details|http://www.campaignmonitor.com/api/clients/#setting_basi
 	my $client_basic_details = $cm->client_setbasics((
 		'clientid'     => $client_id,
 		'CompanyName'  => "ACME Limited",
-		'ContactName'  => "John Doe",
-		'EmailAddress' => "john\@example.com",
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney",
 	));

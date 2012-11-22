@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 if (@ARGV < 1) {
-	print ("Usage: package.pl <version number> \ne.g. package.pl 1.03");
+	print ("Usage: package.pl <version number> \ne.g. package.pl v1.30.1");
 	exit;
 }
 my $version = $ARGV[0];
@@ -28,7 +28,8 @@ if (-e "../$packageName")	{
 `mkdir ../$packageName`;
 `cp -r * ../$packageName/.`;
 
-`cd .. && tar cvPf $packageName.tar $packageName --exclude .git --exclude .gitignore --exclude .travis.yml --exclude package.pl; gzip $packageName.tar`;
+print `pwd`;
+`cd .. && tar cvPf $packageName.tar --exclude='.git' --exclude='.gitignore' --exclude='.travis.yml' --exclude='package.pl' --exclude='example.pl' $packageName; gzip $packageName.tar`;
 `rm -rf ../$packageName`;
 
-print "Successfully created distribution ../$packageName.tar.gz" 
+print "Successfully created distribution ../$packageName.tar.gz"
