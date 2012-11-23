@@ -10,11 +10,14 @@ use JSON;
 use version; our $VERSION = version->declare("v1.20.1");
 
 sub new	{
-		
+
 	my ($class, $args) = @_;
 	my $self = bless($args, $class);
 	$self->{format} = 'json';
-	
+	my $ua = LWP::UserAgent->new;
+	$ua->agent('createsend-perl-'.$Net::CampaignMonitor::VERSION);
+	$self->{useragent} = $ua;
+
 	if ( $self->{secure} == 1) {
 		$self->{netloc}   = 'api.createsend.com:443';
 		$self->{realm}    = 'api.createsend.com';
@@ -30,21 +33,19 @@ sub new	{
 		$self->{realm}    = 'api.createsend.com';
 		$self->{protocol} = 'https://';
 	}
-	
+
 	unless( Params::Util::_POSINT($self->{timeout}) ) {
 		$self->{timeout} = 600;
 	}
-		
+
 	if ( (exists $self->{api_key} ) && !( Params::Util::_STRING( $self->{api_key} )) ) {
 		Carp::croak("Missing or invalid api key");
 	}
-	
+
 	if ( exists $self->{api_key} ) {
-	
-		#create and initialise the rest client
+		# Create and initialise the rest client
 		$self->{client} = $self->create_rest_client();
 		$self->account_systemdate();
-		
 		return $self;
 	}
 	else {
@@ -53,10 +54,10 @@ sub new	{
 }
 
 sub create_rest_client {
-	
 	my ($self) = @_;
-	
-	my $client = REST::Client->new();
+	my $client = REST::Client->new({
+	  useragent => $self->{useragent}
+	});
 	$client->getUseragent->credentials($self->{netloc}, $self->{realm}, $self->{api_key}, "");
 	$client->setFollow(1);
 	$client->setTimeout($self->{timeout});
@@ -150,7 +151,9 @@ sub account_apikey {
 	my $siteurl = $_[0];
 	my $username = $_[1];
 	my $password = $_[2];
-	my $api_client = REST::Client->new();
+	my $api_client = REST::Client->new({
+	  useragent => $self->{useragent}
+	});
 	my $results;
 	
 	$api_client->getUseragent->credentials($self->{netloc}, $self->{protocol}.$self->{realm}."/api/v3/apikey.".$self->{format}, $username, $password);
