@@ -1,3 +1,6 @@
+v1.21.0 Thu 26 Nov 2012
+	- User-Agent header is now perl-createsend-{version}
+
 v1.20.1 Thu 22 Nov 2012
 	- Moved to dotted decimal version number.
 
