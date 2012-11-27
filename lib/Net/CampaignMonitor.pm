@@ -411,26 +411,6 @@ sub client_setbasics {
 	return $results;
 }
 
-sub client_setaccess {
-	
-	my $self = shift;
-	my (%request) = @_;
-	my $client_id = $request{clientid};
-	
-	delete $request{clientid};
-	
-	my $json_request = encode_json \%request;
-	my $results;
-	
-	$self->{client}->PUT($self->{protocol}.$self->{realm}."/api/v3/clients/".$client_id."/setaccess.".$self->{format}, $json_request);
-	
-	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
-	$results->{'code'} = $self->{client}->responseCode();
-	$results->{'headers'} = $self->{client}->responseHeaders();
-	
-	return $results;
-}
-
 sub client_setpaygbilling {
 	
 	my $self = shift;
@@ -1492,7 +1472,7 @@ Net::CampaignMonitor - A Perl wrapper to the Campaign Monitor API.
 
 =head1 VERSION
 
-This documentation refers to version 1.02.
+This documentation refers to version v1.21.0.
 
 =head1 SYNOPSIS
 
@@ -1815,26 +1795,6 @@ L<Setting basic details|http://www.campaignmonitor.com/api/clients/#setting_basi
 		'CompanyName'  => "ACME Limited",
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney",
-	));
-
-=head2 client_setaccess
-
-L<Setting access settings|http://www.campaignmonitor.com/api/clients/#setting_access_details>
-
-Changing access level only
-
-	my $client_access-settings = $cm->client_setaccess((
-		'clientid'    => $client_id,
-		'AccessLevel' => '23',
-	));
-
-Setting username and password
-
-	my $client_access-settings = $cm->client_setaccess((
-		'clientid'    => $client_id,
-		'AccessLevel' => '23',
-		'Username'    => 'jdoe',
-		'Password'    => 'safepassword',
 	));
 
 =head2 client_setpaygbilling
