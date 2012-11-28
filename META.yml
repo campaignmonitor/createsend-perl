@@ -1,5 +1,5 @@
 ---
-abstract: "A Perl wrapper to the Campaign Monitor API.\r"
+abstract: "A Perl wrapper for the Campaign Monitor API.\r"
 author:
   - jeffery@astraaustralis.com.au
 build_requires:
@@ -23,9 +23,10 @@ requires:
   JSON: 2.27
   LWP::UserAgent: 5.835
   Params::Util: 1.01
+  MIME::Base64: 3.13
   REST::Client: 171
   XML::Simple: 2.18
   perl: 5.8.5
 resources:
   license: http://dev.perl.org/licenses/
-version: 1.01
+version: v1.21.0
