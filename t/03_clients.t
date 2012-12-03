@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 18;
+use Test::More tests => 19;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -9,17 +9,17 @@ my $api_key = '';
 my $cm;
 
 if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
-	
-	$api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
-	
-	$cm = Net::CampaignMonitor->new({
-			secure  => 1, 
-			api_key => $api_key,
-		  });
+  $api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
+  $cm = Net::CampaignMonitor->new({
+    secure  => 1,
+    api_key => $api_key,
+    domain => (defined($ENV{'CAMPAIGN_MONITOR_DOMAIN'}) ?
+      $ENV{'CAMPAIGN_MONITOR_DOMAIN'} : 'api.createsend.com'),
+  });
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 18 if $api_key eq '';
+	skip 'Invalid API Key supplied', 19 if $api_key eq '';
 
 	my %new_client = (
 		'CompanyName'  => "ACME Limited",
@@ -71,6 +71,12 @@ SKIP: {
 		'clientid'               => $client_id,
 	);
 
+	my %credits = (
+		'Credits'                       => '0',
+		'CanUseMyCreditsWhenTheyRunOut' => 'true',
+		'clientid'                      => $client_id,
+	);
+
 	my %monthly = (
 		'Currency'               => 'AUD',
 		'ClientPays'             => 'true',
@@ -87,6 +93,7 @@ SKIP: {
 	ok( $cm->client_templates($client_id)->{code} eq '200', 'Got client templates' );
 	ok( $cm->client_setbasics(%replace_client)->{code} eq '200', 'Set client basics' );
 	ok( $cm->client_setpaygbilling(%payg)->{code} eq '200', 'Set client PAYG billing' );
+	ok( $cm->client_transfercredits(%credits)->{code} eq '200', 'Transferred credits to client' );
 	ok( $cm->client_setmonthlybilling(%monthly)->{code} eq '200', 'Set client monthly billing' );
 
 	my %new_person = (

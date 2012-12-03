@@ -9,13 +9,13 @@ my $api_key = '';
 my $cm;
 
 if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
-	
-	$api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
-	
-	$cm = Net::CampaignMonitor->new({
-			secure  => 1, 
-			api_key => $api_key,
-		  });
+  $api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
+  $cm = Net::CampaignMonitor->new({
+    secure  => 1,
+    api_key => $api_key,
+    domain => (defined($ENV{'CAMPAIGN_MONITOR_DOMAIN'}) ?
+      $ENV{'CAMPAIGN_MONITOR_DOMAIN'} : 'api.createsend.com'),
+  });
 }
 
 SKIP: {

@@ -446,6 +446,24 @@ sub client_setmonthlybilling {
 	return $results;
 }
 
+sub client_transfercredits {
+	my $self = shift;
+	my (%request) = @_;
+	my $client_id = $request{clientid};
+
+	delete $request{clientid};
+	my $json_request = encode_json \%request;
+	my $results;
+
+	$self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/credits.".$self->{format}, $json_request);
+
+	$results->{'response'} = $self->decode($self->{client}->responseContent());
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+
+	return $results;
+}
+
 sub client_delete {
 	
 	my $self = shift;
@@ -459,7 +477,6 @@ sub client_delete {
 	
 	return $results;
 }
-
 
 sub client_addperson { 
 	
