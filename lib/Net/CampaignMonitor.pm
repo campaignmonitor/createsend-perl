@@ -89,9 +89,22 @@ sub account_systemdate {
 	return $results;
 }
 
+sub account_billingdetails {
+
+	my ($self) = @_;
+	my $results;
+	$self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/billingdetails.".$self->{format});
+
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+
+	return $results;
+}
+
 sub account_clients {
 
-	if (scalar(@_) == 1) { #get the list of clients
+	if (scalar(@_) == 1) { # Get the list of clients
 		my ($self) = @_;
 		my $results;
 		$self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients.".$self->{format});
@@ -102,7 +115,7 @@ sub account_clients {
 		
 		return $results;
 	}
-	else { #create a new client
+	else { # Create a new client
 		my $self = shift;
 		my %request = @_;
 		
