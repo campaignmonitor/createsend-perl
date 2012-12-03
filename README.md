@@ -1,11 +1,11 @@
-# createsend-perl [![Build Status](https://secure.travis-ci.org/campaignmonitor/createsend-perl.png)][travis]
+# createsend-perl [![Build Status](https://secure.travis-ci.org/campaignmonitor/createsend-perl.png?branch=master)][travis]
 A Perl library for the [Campaign Monitor API](http://www.campaignmonitor.com/api/)
 
 [travis]: http://travis-ci.org/campaignmonitor/createsend-perl
 
 ## Installation and usage
 
-Download and install using CPAN, e.g.
+Download and install using CPAN:
 
     cpan Net::CampaignMonitor
 
@@ -13,18 +13,18 @@ Include the module in the required script and initialise using your API key:
 
     use Net::CampaignMonitor;
     my $cm = Net::CampaignMonitor->new({
-                  api_key => 'abcd1234abcd1234abcd1234',
-                  secure  => 1,
-                  timeout => 300,
-                  });
+      api_key => 'abcd1234abcd1234abcd1234',
+      secure  => 1,
+      timeout => 300,
+    });
 
 All methods return a hash containing the Campaign Monitor response code, the headers and the actual response.
 
     my %results = (
-                code     => '',
-                response => '',
-                headers  => ''
-        );
+      code     => '',
+      response => '',
+      headers  => ''
+    );
 
 Samples for each of the methods and further documentation is available on CPAN or perldocs, e.g.
 
