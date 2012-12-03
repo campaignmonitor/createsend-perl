@@ -1554,6 +1554,12 @@ L<Creating a client|http://www.campaignmonitor.com/api/clients/#creating_a_clien
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney"
 	));
 
+=head2 account_billingdetails
+
+L<Getting your billing details|http://www.campaignmonitor.com/api/account/#getting_your_billing_details>
+
+	my $billing_details = $cm->account_billingdetails()
+
 =head2 account_apikey
 
 L<Getting your API key|http://www.campaignmonitor.com/api/account/#getting_your_api_key>
@@ -1846,6 +1852,16 @@ L<Setting monthly billing|http://www.campaignmonitor.com/api/clients/#setting_mo
 		'Currency'               => 'AUD',
 		'ClientPays'             => 'true',
 		'MarkupPercentage'       => '20',
+	));
+
+=head2 client_transfercredits
+
+L<Transfer credits to/from a client|http://www.campaignmonitor.com/api/clients/#transfer_credits>
+
+	my $result = $cm->client_transfercredits((
+    'clientid'                      => $client_id,
+	  'Credits'                       => '0',
+	  'CanUseMyCreditsWhenTheyRunOut' => 'true',
 	));
 
 =head2 client_delete
