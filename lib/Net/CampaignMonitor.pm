@@ -2344,7 +2344,7 @@ Not quite a bug. This module uses L<REST::Client>. REST::Client fails to install
 
 =head1 MAINTAINER
 
-Campaign Monitor, E<lt>support@campaignmonitor.com<gt>
+Campaign Monitor <support@campaignmonitor.com>
 
 =head1 AUTHOR
 
