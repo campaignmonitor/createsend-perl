@@ -1,11 +1,11 @@
-# createsend-perl [![Build Status](https://secure.travis-ci.org/campaignmonitor/createsend-perl.png)][travis]
+# createsend-perl [![Build Status](https://secure.travis-ci.org/campaignmonitor/createsend-perl.png?branch=master)][travis]
 A Perl library for the [Campaign Monitor API](http://www.campaignmonitor.com/api/)
 
 [travis]: http://travis-ci.org/campaignmonitor/createsend-perl
 
 ## Installation and usage
 
-Download and install using CPAN, e.g.
+Download and install using CPAN:
 
     cpan Net::CampaignMonitor
 
