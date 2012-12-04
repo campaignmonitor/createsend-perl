@@ -329,6 +329,20 @@ sub client_drafts {
 	return $results;
 }
 
+sub client_scheduled {
+
+	my $self = shift;
+	my $client_id = $_[0];
+	my $results;
+	$self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/scheduled.".$self->{format});
+	
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+	
+	return $results;
+}
+
 sub client_lists {
 	
 	my $self = shift;
@@ -1786,6 +1800,12 @@ L<Getting sent campaigns|http://www.campaignmonitor.com/api/clients/#getting_cli
 L<Getting draft campaigns|http://www.campaignmonitor.com/api/clients/#getting_client_drafts>
 
 	my $client_drafts = $cm->client_drafts($client_id);
+
+=head2 client_drafts
+
+L<Getting scheduled campaigns|http://www.campaignmonitor.com/api/clients/#scheduled_campaigns>
+
+	my $client_scheduled = $cm->client_scheduled($client_id);
 
 =head2 client_lists
 
