@@ -742,6 +742,9 @@ sub list_active {
 	my $self = shift;
 	my (%input) = @_;
 	
+	unless( Params::Util::_STRING($input{date}) ) {
+		$input{date} = '';
+	}
 	unless( Params::Util::_POSINT($input{page}) ) {
 		$input{page} = 1;
 	}
@@ -766,10 +769,12 @@ sub list_active {
 }
 
 sub list_unsubscribed {
-	
 	my $self = shift;
 	my (%input) = @_;
 	
+	unless( Params::Util::_STRING($input{date}) ) {
+		$input{date} = '';
+	}
 	unless( Params::Util::_POSINT($input{page}) ) {
 		$input{page} = 1;
 	}
@@ -793,11 +798,43 @@ sub list_unsubscribed {
 	return $results;
 }
 
-sub list_bounced {
+sub list_deleted {
+	my $self = shift;
+	my (%input) = @_;
+
+	unless( Params::Util::_STRING($input{date}) ) {
+		$input{date} = '';
+	}
+	unless( Params::Util::_POSINT($input{page}) ) {
+		$input{page} = 1;
+	}
+	unless( Params::Util::_POSINT($input{pagesize}) && $input{pagesize} >= 10 && $input{pagesize} <= 1000) {
+		$input{pagesize} = 1000;
+	}
+	unless( Params::Util::_STRING($input{orderfield}) && ($input{orderfield} eq 'email' || $input{orderfield} eq 'name' || $input{orderfield} eq 'date')) {
+		$input{orderfield} = 'date';
+	}
+	unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
+		$input{orderdirection} = 'asc';
+	}
+
+	my $results;
+	$self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/deleted.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
 	
+	$results->{'response'} = $self->decode( $self->{client}->responseContent() );
+	$results->{'code'} = $self->{client}->responseCode();
+	$results->{'headers'} = $self->{client}->responseHeaders();
+
+	return $results;
+}
+
+sub list_bounced {
 	my $self = shift;
 	my (%input) = @_;
 	
+	unless( Params::Util::_STRING($input{date}) ) {
+		$input{date} = '';
+	}
 	unless( Params::Util::_POSINT($input{page}) ) {
 		$input{page} = 1;
 	}
@@ -975,7 +1012,6 @@ sub list_deactivate {
 }
 
 sub segments {
-	
 	my $self = shift;
 	my (%request) = @_;
 	my $list_id = $request{listid};
@@ -994,7 +1030,6 @@ sub segments {
 }
 
 sub segment_segmentid {
-	
 	my $self = shift;
 
 	if (scalar(@_) == 1) { #get the segment details
@@ -1027,7 +1062,6 @@ sub segment_segmentid {
 }
 
 sub segment_rules {
-	
 	my $self = shift;
 	my (%request) = @_;
 	my $segment_id = $request{segmentid};
@@ -1046,10 +1080,12 @@ sub segment_rules {
 }
 
 sub segment_active {
-	
 	my $self = shift;
 	my (%input) = @_;
-	
+
+	unless( Params::Util::_STRING($input{date}) ) {
+		$input{date} = '';
+	}
 	unless( Params::Util::_POSINT($input{page}) ) {
 		$input{page} = 1;
 	}
@@ -2056,9 +2092,22 @@ L<Unsubscribed subscribers|http://www.campaignmonitor.com/api/lists/#getting_uns
 		'orderdirection' => 'asc',
 	));
 
+=head2 list_deleted
+
+L<Deleted subscribers|http://www.campaignmonitor.com/api/lists/#deleted_subscribers>
+
+	my $list_deleted_subscribers = $cm->list_deleted((
+		'listid'         => $list_id,
+		'date'           => '1900-01-01',
+		'page'           => '1',
+		'pagesize'       => '100',
+		'orderfield'     => 'email',
+		'orderdirection' => 'asc',
+	));
+
 =head2 list_bounced
 
-L<Bounced subscribers|http://www.campaignmonitor.com/api/lists/#getting_bounced_subscribers>
+L<Bounced subscribers|http://www.campaignmonitor.com/api/lists/#bounced_subscribers>
 
 	my $list_bounced_subscribers = $cm->list_bounced((
 		'listid'         => $list_id,
