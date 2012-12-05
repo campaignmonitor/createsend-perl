@@ -1144,10 +1144,10 @@ sub subscribers {
 	my $self = shift;
 	my (%request) = @_;
 	my $list_id = $request{listid};
-	
+
 	delete $request{listid};
-	
-	if ($request{email}) { #get subscribers details
+
+	if ($request{email}) { # Get subscribers details
 		my $results;
 		$self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$request{email});
 		
@@ -1157,7 +1157,7 @@ sub subscribers {
 		
 		return $results;
 	}
-	else { #add subscriber
+	else { # Add subscriber
 		my $json_request = encode_json \%request;
 		my $results;
 		

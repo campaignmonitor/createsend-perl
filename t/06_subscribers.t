@@ -96,10 +96,15 @@ SKIP: {
 		'listid'        => $list_id,
 	);
 
+	my %delete_subscriber = (
+		'email'  => 'subscriber@example.com',
+		'listid' => $list_id,
+	);
+
 	ok( $cm->subscribers(%subscriber)->{code} eq '201', 'Subscriber created' );
 	ok( $cm->subscribers_import(%new_subscribers)->{code} eq '201', 'Subscribers created' );
 	ok( $cm->subscribers(%existing_subscriber)->{code} eq '200', 'Got subscriber' );
 	ok( $cm->subscribers_history(%existing_subscriber2)->{code} eq '200', 'Got subscriber history' );
 	ok( $cm->subscribers_unsubscribe(%remove_subscriber)->{code} eq '200', 'Unsubscribed subscriber' );
-	ok( $cm->subscribers_delete(%remove_subscriber)->{code} eq '200', 'Deleted subscriber' );
+	ok( $cm->subscribers_delete(%delete_subscriber)->{code} eq '200', 'Deleted subscriber' );
 }
