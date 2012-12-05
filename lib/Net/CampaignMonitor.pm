@@ -2329,6 +2329,7 @@ L<Adding a subscriber|http://www.campaignmonitor.com/api/subscribers/#adding_a_s
 	my $added_subscriber = $cm->subscribers((
 		'listid'       => $list_id,
 		'Resubscribe'  => 'true',
+		'RestartSubscriptionBasedAutoresponders' => 'true',
 		'CustomFields' => [
 			{
 				'Value' => 'http://example.com',
@@ -2389,6 +2390,8 @@ L<Importing many subscribers|http://www.campaignmonitor.com/api/subscribers/#imp
 			}
 		],
 		'Resubscribe' => 'true',
+		'QueueSubscriptionBasedAutoResponders' => 'false',
+		'RestartSubscriptionBasedAutoresponders' => 'true',
 	));
 
 =head2 subscribers_history

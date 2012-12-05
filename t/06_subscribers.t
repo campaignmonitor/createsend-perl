@@ -26,6 +26,7 @@ SKIP: {
 
 	my %subscriber = (
 		  'Resubscribe'  => 'true',
+  	  'RestartSubscriptionBasedAutoresponders' => 'true',
 		  'CustomFields' => [
 				      {
 					'Value' => 'http://example.com',
@@ -75,7 +76,9 @@ SKIP: {
 			   }
 			 ],
 	  'Resubscribe' => 'true',
-	  'listid'       => $list_id,
+	  'RestartSubscriptionBasedAutoresponders' => 'true',
+	  'QueueSubscriptionBasedAutoResponders' => 'false',
+	  'listid' => $list_id,
 	);
 
 	my %existing_subscriber = (
