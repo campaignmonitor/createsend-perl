@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 11;
+use Test::More tests => 13;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 11 if $api_key eq '';
+	skip 'Invalid API Key supplied', 13 if $api_key eq '';
 
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 	my $list_id   = $cm->client_lists($client_id)->{response}->[0]->{ListID};
@@ -44,6 +44,16 @@ SKIP: {
 	ok( $created_campaign->{code} eq '201', 'Draft campaign created' );
 
 	my $campaign_id = $created_campaign->{response};
+
+	my %campaign_schedule = (
+		  'SendDate'          => '2016-01-01',
+		  'ConfirmationEmail' => 'myemail@example.com',
+		  'campaignid'        => $campaign_id
+	);
+
+	my %campaign_unschedule = (
+		  'campaignid'        => $campaign_id
+	);
 
 	my %campaign_send = (
 		  'SendDate'          => 'Immediately',
@@ -77,7 +87,9 @@ SKIP: {
 		'campaignid'     => $campaign_id,
 	);
 
-	ok( $cm->campaigns_send(%campaign_send)->{code} eq '200', 'Campaign send' );
+	ok( $cm->campaigns_send(%campaign_schedule)->{code} eq '200', 'Campaign scheduled' );
+	ok( $cm->campaigns_unschedule(%campaign_unschedule)->{code} eq '200', 'Campaign unscheduled' );
+	ok( $cm->campaigns_send(%campaign_send)->{code} eq '200', 'Campaign sent' );
 	ok( $cm->campaigns_sendpreview(%campaign_sendpreview)->{code} eq '200', 'Campaign send previews' );
 	ok( $cm->campaigns_summary($campaign_id)->{code} eq '200', 'Campaign summary' );
 	ok( $cm->campaigns_listsandsegments($campaign_id)->{code} eq '200', 'Campaign lists and segments' );

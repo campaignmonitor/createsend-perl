@@ -1277,7 +1277,6 @@ sub campaigns {
 }
 
 sub campaigns_send {
-	
 	my $self = shift;
 	my (%request) = @_;
 	my $campaign_id = $request{campaignid};
@@ -1293,6 +1292,24 @@ sub campaigns_send {
 	$results->{'headers'} = $self->{client}->responseHeaders();
 	
 	return $results;
+}
+
+sub campaigns_unschedule {
+  my $self = shift;
+  my (%request) = @_;
+  my $campaign_id = $request{campaignid};
+
+  delete $request{campaignid};
+  my $json_request = encode_json \%request;
+  my $results;
+
+  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/unschedule.".$self->{format}, $json_request);
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
 }
 
 sub campaigns_sendpreview {
@@ -1683,6 +1700,16 @@ L<Sending a draft campaign|http://www.campaignmonitor.com/api/campaigns/#sending
 		'campaignid'        => 'b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
 		'SendDate'          => 'YYYY-MM-DD HH:MM',
 		'ConfirmationEmail' => 'myemail@mydomain.com',
+	));
+
+The campaignid must be in the hash.
+
+=head2 campaigns_unschedule
+
+L<Unscheduling a scheduled campaign|http://www.campaignmonitor.com/api/campaigns/#unscheduling_a_campaign>
+
+	my $unscheduled = $cm->campaigns_unschedule((
+		'campaignid'        => 'b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
 	));
 
 The campaignid must be in the hash.
