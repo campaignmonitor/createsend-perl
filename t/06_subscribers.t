@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 5 if $api_key eq '';
+	skip 'Invalid API Key supplied', 6 if $api_key eq '';
 
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 	my $list_id   = $cm->client_lists($client_id)->{response}->[0]->{ListID};
@@ -98,4 +98,5 @@ SKIP: {
 	ok( $cm->subscribers(%existing_subscriber)->{code} eq '200', 'Got subscriber' );
 	ok( $cm->subscribers_history(%existing_subscriber2)->{code} eq '200', 'Got subscriber history' );
 	ok( $cm->subscribers_unsubscribe(%remove_subscriber)->{code} eq '200', 'Unsubscribed subscriber' );
+	ok( $cm->subscribers_delete(%remove_subscriber)->{code} eq '200', 'Deleted subscriber' );
 }

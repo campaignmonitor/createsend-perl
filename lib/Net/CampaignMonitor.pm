@@ -1226,7 +1226,21 @@ sub subscribers_unsubscribe {
 	return $results;
 }
 
+sub subscribers_delete {
+  my $self = shift;
+  my (%request) = @_;
+  my $list_id   = $request{listid};
+  my $email     = $request{email};
+  my $results;
 
+  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$email);
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
+}
 
 sub templates {
 	
@@ -2393,6 +2407,15 @@ L<Unsubscribing a subscriber|http://www.campaignmonitor.com/api/subscribers/#uns
 	my $unsub_sub = $cm->subscribers_unsubscribe((
 		'listid'        => $list_id,
 		'EmailAddress'  => 'subscriber@example.com',
+	));
+
+=head2 subscribers_delete
+
+L<Deleting a subscriber|http://www.campaignmonitor.com/api/subscribers/#deleting_a_subscriber>
+
+	my $deleted = $cm->subscribers_delete((
+		'listid'        => $list_id,
+		'email'         => 'subscriber@example.com',
 	));
 
 =head2 templates
