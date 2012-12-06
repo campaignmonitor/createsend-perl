@@ -2022,6 +2022,7 @@ L<Creating a list|http://www.campaignmonitor.com/api/lists/#creating_a_list>
     'clientid'                => $client_id,
     'Title'                   => 'Website Subscribers',
     'UnsubscribePage'         => 'http://www.example.com/unsubscribed.html',
+    'UnsubscribeSetting'      => 'AllClientLists',
     'ConfirmedOptIn'          => 'false',
     'ConfirmationSuccessPage' => 'http://www.example.com/joined.html',
   ));
@@ -2038,6 +2039,7 @@ L<Updating a list|http://www.campaignmonitor.com/api/lists/#updating_a_list>
     'listid'                    => $list_id,
     'Title'                     => 'Website Subscribers',
     'UnsubscribePage'           => 'http://www.example.com/unsubscribed.html',
+    'UnsubscribeSetting'        => 'AllClientLists',
     'ConfirmedOptIn'            => 'false',
     'ConfirmationSuccessPage'   => 'http://www.example.com/joined.html',
     'AddUnsubscribesToSuppList' => 'true',

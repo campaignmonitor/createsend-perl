@@ -26,6 +26,7 @@ SKIP: {
 	my %list = (
 		'Title'                   => 'Website Subscribers',
 		'UnsubscribePage'         => 'http://www.example.com/unsubscribed.html',
+		'UnsubscribeSetting'      => 'AllClientLists',
 		'ConfirmedOptIn'          => 'false',
 		'ConfirmationSuccessPage' => 'http://www.example.com/joined.html',
 		'clientid'                => $client_id
@@ -40,6 +41,7 @@ SKIP: {
 	my %update_list = (
 		'Title'                     => 'Website Subscribers',
 		'UnsubscribePage'           => 'http://www.example.com/unsubscribed.html',
+		'UnsubscribeSetting'        => 'AllClientLists',
 		'ConfirmedOptIn'            => 'false',
 		'ConfirmationSuccessPage'   => 'http://www.example.com/joined.html',
     'AddUnsubscribesToSuppList' => 'true',
