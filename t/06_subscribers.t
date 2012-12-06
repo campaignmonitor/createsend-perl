@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 6 if $api_key eq '';
+	skip 'Invalid API Key supplied', 7 if $api_key eq '';
 
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 	my $list_id   = $cm->client_lists($client_id)->{response}->[0]->{ListID};
@@ -46,6 +46,30 @@ SKIP: {
     'listid'       => $list_id,
   );
 
+  my %update_subscriber = (
+    'Resubscribe'  => 'true',
+    'RestartSubscriptionBasedAutoresponders' => 'true',
+    'CustomFields' => [
+      {
+        'Value' => 'http://example.com',
+        'Key'   => 'website'
+      },
+      {
+        'Value' => 'magic',
+        'Key'   => 'interests'
+      },
+      {
+        'Value' => '',
+        'Key'   => 'interests',
+        'Clear' => 'true'
+      }
+    ],
+    'Name'         => 'Renamed Subscriber',
+    'EmailAddress' => 'subscriber@example.com',
+    'listid'       => $list_id,
+    'email'        => 'subscriber@example.com'
+  );
+
   my %new_subscribers = (
     'Subscribers' => [
       {
@@ -59,8 +83,8 @@ SKIP: {
             'Key' => 'interests'
           },
           {
-            'Value' => 'romantic walks',
-            'Key' => '',
+            'Value' => '',
+            'Key' => 'interests',
             'Clear' => 'true'
           }
         ],
@@ -103,6 +127,7 @@ SKIP: {
 	);
 
 	ok( $cm->subscribers(%subscriber)->{code} eq '201', 'Subscriber created' );
+	ok( $cm->subscribers_update(%update_subscriber)->{code} eq '200', 'Subscriber updated' );
 	ok( $cm->subscribers_import(%new_subscribers)->{code} eq '201', 'Subscribers created' );
 	ok( $cm->subscribers(%existing_subscriber)->{code} eq '200', 'Got subscriber' );
 	ok( $cm->subscribers_history(%existing_subscriber2)->{code} eq '200', 'Got subscriber history' );

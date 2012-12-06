@@ -1170,6 +1170,26 @@ sub subscribers {
 	}
 }
 
+sub subscribers_update {
+  my $self = shift;
+  my (%request) = @_;
+  my $list_id   = $request{listid};
+  my $email     = $request{email};
+
+  delete $request{listid};
+  delete $request{email};
+  my $json_request = encode_json \%request;
+  my $results;
+
+  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$email, $json_request);
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
+}
+
 sub subscribers_import {
 	my $self = shift;
 	my (%request) = @_;
@@ -2352,6 +2372,34 @@ L<Getting a subscriber's details|http://www.campaignmonitor.com/api/subscribers/
 		'listid' => $list_id,
 		'email'  => 'subscriber@example.com',
 	));
+
+=head2 subscribers_update
+
+L<Updating a subscriber|http://www.campaignmonitor.com/api/subscribers/#updating_a_subscriber>
+
+  my $updated_subscriber = $cm->subscribers_update((
+    'Resubscribe'  => 'true',
+    'RestartSubscriptionBasedAutoresponders' => 'true',
+    'CustomFields' => [
+      {
+        'Value' => 'http://example.com',
+        'Key'   => 'website'
+      },
+      {
+        'Value' => 'magic',
+        'Key'   => 'interests'
+      },
+      {
+        'Value' => '',
+        'Key'   => 'interests',
+        'Clear' => 'true'
+      }
+    ],
+    'Name'         => 'Renamed Subscriber',
+    'EmailAddress' => 'subscriber@example.com',
+    'listid'       => $list_id,
+    'email'        => 'subscriber@example.com'
+  ));
 
 =head2 subscribers_import
 
