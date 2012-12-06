@@ -24,62 +24,63 @@ SKIP: {
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 	my $list_id   = $cm->client_lists($client_id)->{response}->[0]->{ListID};
 
-	my %subscriber = (
-		  'Resubscribe'  => 'true',
-  	  'RestartSubscriptionBasedAutoresponders' => 'true',
-		  'CustomFields' => [
-				      {
-					'Value' => 'http://example.com',
-					'Key'   => 'website'
-				      },
-				      {
-					'Value' => 'magic',
-					'Key'   => 'interests'
-				      },
-				      {
-					'Value' => 'romantic walks',
-					'Key'   => 'interests'
-				      }
-				    ],
-		  'Name'         => 'New Subscriber',
-		  'EmailAddress' => 'subscriber@example.com',
-		  'listid'       => $list_id,
-	);
+  my %subscriber = (
+    'Resubscribe'  => 'true',
+    'RestartSubscriptionBasedAutoresponders' => 'true',
+    'CustomFields' => [
+      {
+        'Value' => 'http://example.com',
+        'Key'   => 'website'
+      },
+      {
+        'Value' => 'magic',
+        'Key'   => 'interests'
+      },
+      {
+        'Value' => 'romantic walks',
+        'Key'   => 'interests'
+      }
+    ],
+    'Name'         => 'New Subscriber',
+    'EmailAddress' => 'subscriber@example.com',
+    'listid'       => $list_id,
+  );
 
-	my %new_subscribers = (
-	  'Subscribers' => [
-			   {
-			     'CustomFields' => [
-				 {
-				   'Value' => 'http://example.com',
-				   'Key' => 'website'
-				 },
-				 {
-				   'Value' => 'magic',
-				   'Key' => 'interests'
-				 },
-				 {
-				   'Value' => 'romantic walks',
-				   'Key' => 'interests'
-				 }
-			       ],
-			     'Name' => 'New Subscriber One',
-			     'EmailAddress' => 'subscriber1@example.com'
-			   },
-			   {
-			     'Name' => 'New Subscriber Two',
-			     'EmailAddress' => 'subscriber2@example.com'
-			   },
-			   {
-			     'Name' => 'New Subscriber Three',
-			     'EmailAddress' => 'subscriber3@example.com'
-			   }
-			 ],
-	  'Resubscribe' => 'true',
-	  'RestartSubscriptionBasedAutoresponders' => 'true',
-	  'QueueSubscriptionBasedAutoResponders' => 'false',
-	  'listid' => $list_id,
-	);
+  my %new_subscribers = (
+    'Subscribers' => [
+      {
+        'CustomFields' => [
+          {
+            'Value' => 'http://example.com',
+            'Key' => 'website'
+          },
+          {
+            'Value' => 'magic',
+            'Key' => 'interests'
+          },
+          {
+            'Value' => 'romantic walks',
+            'Key' => '',
+            'Clear' => 'true'
+          }
+        ],
+        'Name' => 'New Subscriber One',
+        'EmailAddress' => 'subscriber1@example.com'
+      },
+      {
+        'Name' => 'New Subscriber Two',
+        'EmailAddress' => 'subscriber2@example.com'
+      },
+      {
+        'Name' => 'New Subscriber Three',
+        'EmailAddress' => 'subscriber3@example.com'
+      }
+    ],
+    'Resubscribe' => 'true',
+    'RestartSubscriptionBasedAutoresponders' => 'true',
+    'QueueSubscriptionBasedAutoResponders' => 'false',
+    'listid' => $list_id,
+  );
 
 	my %existing_subscriber = (
 		'email'  => 'subscriber@example.com',

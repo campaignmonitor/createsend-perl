@@ -1140,7 +1140,6 @@ sub segment_delete_rules {
 }
 
 sub subscribers {
-	
 	my $self = shift;
 	my (%request) = @_;
 	my $list_id = $request{listid};
@@ -1172,7 +1171,6 @@ sub subscribers {
 }
 
 sub subscribers_import {
-	
 	my $self = shift;
 	my (%request) = @_;
 	my $list_id = $request{listid};
@@ -2374,7 +2372,8 @@ L<Importing many subscribers|http://www.campaignmonitor.com/api/subscribers/#imp
 					},
 					{
 						'Value' => 'romantic walks',
-						'Key' => 'interests'
+						'Key' => '',
+						'Clear' => 'true'
 					}
 				],
 				'Name' => 'New Subscriber One',
