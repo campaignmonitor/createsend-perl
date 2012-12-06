@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 20 if $api_key eq '';
+	skip 'Invalid API Key supplied', 21 if $api_key eq '';
 
 	my %new_client = (
 		'CompanyName'  => "ACME Limited",
@@ -58,7 +58,7 @@ SKIP: {
 		'Country'      => "Australia",
 		'TimeZone'     => "(GMT+10:00) Canberra, Melbourne, Sydney",
 		'clientid'     => $client_id
-	);		
+	);
 
 	my %payg = (
 		'Currency'               => 'AUD',
@@ -84,11 +84,17 @@ SKIP: {
 		'clientid'               => $client_id,
 	);
 
+  my %listsforemail = (
+    'email' => 'example@example.com',
+    'clientid' => $client_id,
+  );
+
 	ok( $cm->client_clientid($client_id)->{code} eq '200', 'Got client details' );
 	ok( $cm->client_campaigns($client_id)->{code} eq '200', 'Got client sent campaigns' );
 	ok( $cm->client_drafts($client_id)->{code} eq '200', 'Got client draft campaigns' );
 	ok( $cm->client_scheduled($client_id)->{code} eq '200', 'Got client scheduled campaigns' );
 	ok( $cm->client_lists($client_id)->{code} eq '200', 'Got client subscriber lists' );
+	ok( $cm->client_listsforemail(%listsforemail)->{code} eq '200', 'Got client lists for an email address' );
 	ok( $cm->client_segments($client_id)->{code} eq '200', 'Got client segments' );
 	ok( $cm->client_suppressionlist(%paging_info)->{code} eq '200', 'Got client suppression list' );
 	ok( $cm->client_templates($client_id)->{code} eq '200', 'Got client templates' );

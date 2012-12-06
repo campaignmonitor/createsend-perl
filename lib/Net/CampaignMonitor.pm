@@ -357,6 +357,22 @@ sub client_lists {
 	return $results;
 }
 
+sub client_listsforemail {
+  my $self = shift;
+  my (%request) = @_;
+  my $client_id   = $request{clientid};
+  my $email     = $request{email};
+
+  my $results;
+  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/listsforemail.".$self->{format}."?email=".$email);
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
+}
+
 sub client_segments {
 	
 	my $self = shift;
@@ -1209,7 +1225,6 @@ sub subscribers_import {
 }
 
 sub subscribers_history {
-	
 	my $self = shift;
 	my (%request) = @_;
 	my $list_id   = $request{listid};
@@ -1226,7 +1241,6 @@ sub subscribers_history {
 }
 
 sub subscribers_unsubscribe {
-	
 	my $self = shift;
 	my (%request) = @_;
 	my $list_id = $request{listid};
@@ -1261,7 +1275,6 @@ sub subscribers_delete {
 }
 
 sub templates {
-	
 	my $self = shift;
 
 	if ( scalar(@_) == 1 ) { #get the template details
@@ -1907,6 +1920,15 @@ L<Getting scheduled campaigns|http://www.campaignmonitor.com/api/clients/#schedu
 L<Getting subscriber lists|http://www.campaignmonitor.com/api/clients/#getting_client_lists>
 
 	my $client_lists = $cm->client_lists($client_id);
+
+=head2 client_listsforemail
+
+L<Getting lists for an email address|http://www.campaignmonitor.com/api/clients/#lists_for_email>
+
+  my $lists = $cm->client_listsforemail((
+    'clientid' => $client_id,
+    'email'    => 'example@example.com',
+  ));
 
 =head2 client_segments
 
