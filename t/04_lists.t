@@ -38,11 +38,13 @@ SKIP: {
 	my $list_id = $created_list->{'response'};
 
 	my %update_list = (
-		'Title'                   => 'Website Subscribers',
-		'UnsubscribePage'         => 'http://www.example.com/unsubscribed.html',
-		'ConfirmedOptIn'          => 'false',
-		'ConfirmationSuccessPage' => 'http://www.example.com/joined.html',
-		'listid'                  => $list_id
+		'Title'                     => 'Website Subscribers',
+		'UnsubscribePage'           => 'http://www.example.com/unsubscribed.html',
+		'ConfirmedOptIn'            => 'false',
+		'ConfirmationSuccessPage'   => 'http://www.example.com/joined.html',
+    'AddUnsubscribesToSuppList' => 'true',
+    'ScrubActiveWithSuppList'   => 'true',
+		'listid'                    => $list_id
 	);
 
 	my %paging_info = (

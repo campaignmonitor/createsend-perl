@@ -626,7 +626,7 @@ sub lists { # Create a list
 sub list_listid {
   my $self = shift;
   
-  if ( scalar(@_) == 1 ) { #get the list details
+  if ( scalar(@_) == 1 ) { # Get the list details
     my $list_id = $_[0];
     my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id.".".$self->{format});
@@ -637,7 +637,7 @@ sub list_listid {
     
     return $results;
   }
-  else { #updating a list
+  else { # Updating a list
     my (%request) = @_;
     my $list_id = $request{listid};
   
@@ -2031,17 +2031,19 @@ L<Creating a list|http://www.campaignmonitor.com/api/lists/#creating_a_list>
 L<List details|http://www.campaignmonitor.com/api/lists/#getting_list_details>
 
   my $list = $cm->list_listid($list_id);
-  
+
 L<Updating a list|http://www.campaignmonitor.com/api/lists/#updating_a_list>
 
   my $updated_list = $cm->list_listid((
-    'listid'                  => $list_id,
-    'Title'                   => 'Website Subscribers',
-    'UnsubscribePage'         => 'http://www.example.com/unsubscribed.html',
-    'ConfirmedOptIn'          => 'false',
-    'ConfirmationSuccessPage' => 'http://www.example.com/joined.html',
+    'listid'                    => $list_id,
+    'Title'                     => 'Website Subscribers',
+    'UnsubscribePage'           => 'http://www.example.com/unsubscribed.html',
+    'ConfirmedOptIn'            => 'false',
+    'ConfirmationSuccessPage'   => 'http://www.example.com/joined.html',
+    'AddUnsubscribesToSuppList' => 'true',
+    'ScrubActiveWithSuppList'   => 'true',
   ));
-  
+
 =head2 list_stats
 
 L<List stats|http://www.campaignmonitor.com/api/lists/#getting_list_stats>
