@@ -341,8 +341,8 @@ sub client_lists {
 sub client_listsforemail {
   my $self = shift;
   my (%request) = @_;
-  my $client_id   = $request{clientid};
-  my $email     = $request{email};
+  my $client_id = $request{clientid};
+  my $email = $request{email};
 
   my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/listsforemail.".$self->{format}."?email=".$email);
@@ -404,6 +404,26 @@ sub client_suppress {
   my $results;
 
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/suppress.".$self->{format}, $json_request);
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
+}
+
+sub client_unsuppress {
+  my $self = shift;
+  my (%request) = @_;
+  my $client_id = $request{clientid};
+  my $email = $request{email};
+  
+  delete $request{clientid};
+  delete $request{email};
+  my $json_request = encode_json \%request;
+  my $results;
+
+  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/unsuppress.".$self->{format}."?email=".$email, $json_request);
 
   $results->{'response'} = $self->decode( $self->{client}->responseContent() );
   $results->{'code'} = $self->{client}->responseCode();
@@ -1894,7 +1914,7 @@ L<Getting segments|http://www.campaignmonitor.com/api/clients/#getting_client_se
 
   my $client_segments = $cm->client_segments($client_id);
 
-=head2 client_suppressionlist
+=head2 client_idionlist
 
 L<Getting suppression list|http://www.campaignmonitor.com/api/clients/#getting_client_suppressionlist>
 
@@ -1912,6 +1932,15 @@ L<Suppress email addresses|http://www.campaignmonitor.com/api/clients/#suppress_
 
   my $suppressed = $cm->client_suppress((
     'EmailAddresses' => [ 'example123@example.com', 'example456@example.com' ],
+    'clientid' => $client_id,
+  ));
+
+=head2 client_unsuppress
+
+L<Unsuppress an email address|http://www.campaignmonitor.com/api/clients/#unsuppress_an_email>
+
+  my $unsuppressed = $cm->client_unsuppress((
+    'email' => 'example123@example.com',
     'clientid' => $client_id,
   ));
 

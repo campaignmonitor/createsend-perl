@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 22;
+use Test::More tests => 23;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 22 if $api_key eq '';
+	skip 'Invalid API Key supplied', 23 if $api_key eq '';
 
 	my %new_client = (
 		'CompanyName'  => "ACME Limited",
@@ -94,6 +94,11 @@ SKIP: {
     'clientid' => $client_id,
   );
 
+  my %unsuppress = (
+    'email' => 'example123@example.com',
+    'clientid' => $client_id,
+  );
+
 	ok( $cm->client_clientid($client_id)->{code} eq '200', 'Got client details' );
 	ok( $cm->client_campaigns($client_id)->{code} eq '200', 'Got client sent campaigns' );
 	ok( $cm->client_drafts($client_id)->{code} eq '200', 'Got client draft campaigns' );
@@ -108,6 +113,7 @@ SKIP: {
 	ok( $cm->client_transfercredits(%credits)->{code} eq '200', 'Transferred credits to client' );
 	ok( $cm->client_setmonthlybilling(%monthly)->{code} eq '200', 'Set client monthly billing' );
 	ok( $cm->client_suppress(%suppress)->{code} eq '200', 'Suppressed email addresses' );
+	ok( $cm->client_unsuppress(%unsuppress)->{code} eq '200', 'Unsuppressed an email address' );
 
 	my %new_person = (
 		'clientid'     	=> $client_id,
