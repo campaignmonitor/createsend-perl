@@ -385,12 +385,30 @@ sub client_suppressionlist {
   }
   
   my $results;
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$input{clientid}."/suppressionlist.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$input{clientid}."/suppressionlist.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
+
   $results->{'response'} = $self->decode( $self->{client}->responseContent() );
   $results->{'code'} = $self->{client}->responseCode();
   $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
+}
+
+sub client_suppress {
+  my $self = shift;
+  my (%request) = @_;
+  my $client_id = $request{clientid};
   
+  delete $request{clientid};
+  my $json_request = encode_json \%request;
+  my $results;
+
+  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/suppress.".$self->{format}, $json_request);
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
   return $results;
 }
 
@@ -1886,6 +1904,15 @@ L<Getting suppression list|http://www.campaignmonitor.com/api/clients/#getting_c
     'pagesize'       => '100',
     'orderfield'     => 'email',
     'orderdirection' => 'asc',
+  ));
+  
+=head2 client_suppress
+
+L<Suppress email addresses|http://www.campaignmonitor.com/api/clients/#suppress_email_addresses>
+
+  my $suppressed = $cm->client_suppress((
+    'EmailAddresses' => [ 'example123@example.com', 'example456@example.com' ],
+    'clientid' => $client_id,
   ));
 
 =head2 client_templates
