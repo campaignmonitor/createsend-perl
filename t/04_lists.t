@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 20 if $api_key eq '';
+	skip 'Invalid API Key supplied', 21 if $api_key eq '';
 
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 
@@ -59,22 +59,30 @@ SKIP: {
 	);
 
 	my %custom_field = (
-		'FieldName' => 'Newsletter Format',
-		'DataType'  => 'MultiSelectOne',
-		'Options'   => [ "HTML", "Text" ],
-		'listid'    => $list_id,
+		'FieldName'                 => 'Newsletter Format',
+		'DataType'                  => 'MultiSelectOne',
+		'Options'                   => [ "HTML", "Text" ],
+		'VisibleInPreferenceCenter' => 'true',
+		'listid'                    => $list_id,
+	);
+
+	my %update_custom_field = (
+	  'listid'                    => $list_id,
+	  'customfieldkey'            => '[NewsletterFormat]',
+	  'FieldName'                 => 'Newsletter Format Renamed',
+	  'VisibleInPreferenceCenter' => 'false',
 	);
 
 	my %custom_field_options = (
 		'KeepExistingOptions' => 'true',
 		'Options'             => [ "First Option", "Second Option", "Third Option" ],
 		'listid'              => $list_id,
-		'customfieldkey'      => '[NewsletterFormat]',
+		'customfieldkey'      => '[NewsletterFormatRenamed]',
 	);
 
 	my %custom_field_key = (
 		'listid'         => $list_id,
-		'customfieldkey' => '[NewsletterFormat]',
+		'customfieldkey' => '[NewsletterFormatRenamed]',
 	);
 
 	my %webhook = (
@@ -94,9 +102,10 @@ SKIP: {
 	ok( $cm->list_deleted(%paging_info)->{code} eq '200', 'Got list deleted subscribers' );
 	ok( $cm->list_bounced(%paging_info)->{code} eq '200', 'Got list bounced subscribers' );
 	ok( $cm->list_listid(%update_list)->{code} eq '200', 'Updated list details' );
-	ok( $cm->list_customfields(%custom_field)->{code} eq '201', 'List customfield created' );
-	ok( $cm->list_options(%custom_field_options)->{code} eq '200', 'List customfield created' );
-	ok( $cm->list_delete_customfieldkey(%custom_field_key)->{code} eq '200', 'Delete customfieldkey' );
+	ok( $cm->list_customfields(%custom_field)->{code} eq '201', 'List custom field created' );
+	ok( $cm->list_customfields_update(%update_custom_field)->{code} eq '200', 'List custom field updated' );
+	ok( $cm->list_options(%custom_field_options)->{code} eq '200', 'List custom field options updated' );
+	ok( $cm->list_delete_customfieldkey(%custom_field_key)->{code} eq '200', 'Deleted list custom field' );
 	ok( $cm->list_webhooks($list_id)->{code} eq '200', 'Got list webhooks' );
 
 	my $created_webhook = $cm->list_webhooks(%webhook);

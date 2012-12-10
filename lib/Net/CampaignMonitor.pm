@@ -710,7 +710,7 @@ sub list_stats {
 sub list_customfields {
   my $self = shift;
   
-  if (scalar(@_) == 1) { #get the custom field details
+  if (scalar(@_) == 1) { # Get the custom field details
     my $list_id = $_[0];
     my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields.".$self->{format});
@@ -721,7 +721,7 @@ sub list_customfields {
     
     return $results;
   }
-  else { #creating a custom field
+  else { # Create a new custom field
     my (%request) = @_;
     my $list_id = $request{listid};
 
@@ -738,6 +738,26 @@ sub list_customfields {
     
     return $results;
   }
+}
+
+sub list_customfields_update {
+  my $self = shift;
+  my (%request) = @_;
+  my $list_id   = $request{listid};
+  my $key     = $request{customfieldkey};
+
+  delete $request{listid};
+  delete $request{customfieldkey};
+  my $json_request = encode_json \%request;
+  my $results;
+
+  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields/".$key.".".$self->{format}, $json_request);
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
 }
 
 sub list_segments {
@@ -2312,12 +2332,6 @@ L<List stats|http://www.campaignmonitor.com/api/lists/#getting_list_stats>
 
   my $list_stats = $cm->list_stats($list_id);
 
-=head2 list_customfields
-
-L<List custom fields|http://www.campaignmonitor.com/api/lists/#getting_list_custom_fields>
-
-  my $list_customfields = $cm->list_customfields($list_id);
-  
 =head2 list_segments
 
 L<List segments|http://www.campaignmonitor.com/api/lists/#getting_list_segments>
@@ -2391,6 +2405,10 @@ L<Bounced subscribers|http://www.campaignmonitor.com/api/lists/#bounced_subscrib
 
 =head2 list_customfields
 
+L<List custom fields|http://www.campaignmonitor.com/api/lists/#getting_list_custom_fields>
+
+  my $list_customfields = $cm->list_customfields($list_id);
+
 L<Creating a custom field|http://www.campaignmonitor.com/api/lists/#creating_a_custom_field>
 
   my $custom_field = $cm->list_customfields((
@@ -2399,7 +2417,18 @@ L<Creating a custom field|http://www.campaignmonitor.com/api/lists/#creating_a_c
     'DataType'  => 'MultiSelectOne',
     'Options'   => [ "HTML", "Text" ],
   ));
-  
+
+=head2 list_customfields_update
+
+L<Updating a custom field|http://www.campaignmonitor.com/api/lists/#updating_a_custom_field>
+
+  my $updated_custom_field = $cm->list_customfields_update((
+    'listid'         => $list_id,
+    'customfieldkey' => '[NewsletterFormat]',
+    'FieldName' => 'Renamed Newsletter Format',
+    'VisibleInPreferenceCenter' => 'false',
+  ));
+
 =head2 list_options
 
 L<Updating custom field options|http://www.campaignmonitor.com/api/lists/#updating_custom_field_options>
