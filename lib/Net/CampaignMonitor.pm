@@ -1344,6 +1344,24 @@ sub campaigns {
   return $results;
 }
 
+sub campaigns_fromtemplate {
+  my $self = shift;
+  my (%request) = @_;
+  my $client_id = $request{clientid};
+
+  delete $request{clientid};
+  my $json_request = encode_json \%request;
+  my $results;
+
+  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$client_id."/fromtemplate.".$self->{format}, $json_request);
+  
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
+}
+
 sub campaigns_send {
   my $self = shift;
   my (%request) = @_;
@@ -1740,13 +1758,109 @@ L<Creating a draft campaign|http://www.campaignmonitor.com/api/campaigns/#creati
     'TextUrl'    => 'http://example.com/campaigncontent/index.txt',
     'Subject'    => 'My Subject',
     'HtmlUrl'    => 'http://example.com/campaigncontent/index.html',
-    'SegmentIDs' => [   
+    'SegmentIDs' => [
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1'
       ],
     'FromEmail'  => 'myemail@mydomain.com',
     'Name'       => 'My Campaign Name',
     'ReplyTo'    => 'myemail@mydomain.com',
+  ));
+
+The clientid must be in the hash.
+
+-head2 campaigns_fromtemplate
+
+L<Creating a campaign from a template|http://www.campaignmonitor.com/api/campaigns/#creating_a_campaign_from_template>
+
+  my $template_content = {
+    'Singlelines' => [
+      {
+        'Content' => "This is a heading",
+        'Href' => "http://example.com/"
+      }
+    ],
+    'Multilines' => [
+      {
+        'Content' => "<p>This is example</p><p>multiline <a href=\"http://example.com\">content</a>...</p>"
+      }
+    ],
+    'Images' => [
+      {
+        'Content' => "http://example.com/image.png",
+        'Alt' => "This is alt text for an image",
+        'Href' => "http://example.com/"
+      }
+    ],
+    'Repeaters' => [
+      {
+        'Items' => [
+          (
+            'Layout' => "My layout",
+            'Singlelines' => [
+              {
+                'Content' => "This is a repeater heading",
+                'Href' => "http://example.com/"
+              }
+            ],
+            'Multilines' => [
+              {
+                'Content' => "<p>This is example</p><p>multiline <a href=\"http://example.com\">content</a>...</p>"
+              }
+            ],
+            'Images' => [
+              {
+                'Content' => "http://example.com/repeater-image.png",
+                'Alt' => "This is alt text for a repeater image",
+                'Href' => "http://example.com/"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
+The $template_content variable as defined above would be used to fill the
+content of a template with markup similar to the following:
+
+  <html>
+    <head><title>My Template</title></head>
+    <body>
+      <p><singleline>Enter heading...</singleline></p>
+      <div><multiline>Enter description...</multiline></div>
+      <img id="header-image" editable="true" width="500" />
+      <repeater>
+        <layout label="My layout">
+          <div class="repeater-item">
+            <p><singleline></singleline></p>
+            <div><multiline></multiline></div>
+            <img editable="true" width="500" />
+          </div>
+        </layout>
+      </repeater>
+      <p><unsubscribe>Unsubscribe</unsubscribe></p>
+    </body>
+  </html>     
+
+
+  my $campaign = $cm->campaigns_fromtemplate((
+    'clientid'         => 'b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
+    'Name'             => 'My Campaign Name',
+    'Subject'          => 'My Subject',
+    'FromName'         => 'My Name',
+    'FromEmail'        => 'myemail@mydomain.com',
+    'ReplyTo'          => 'myemail@mydomain.com',
+    'ListIDs'          => [
+      'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
+      'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1'
+     ],
+    'SegmentIDs'       => [   
+      'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
+      'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1'
+     ],
+     'TemplateID'      => '82938273928739287329873928379283',
+     'TemplateContent' => $template_content,
   ));
 
 The clientid must be in the hash.

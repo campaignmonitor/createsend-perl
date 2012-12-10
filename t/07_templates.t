@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 4 if $api_key eq '';
+	skip 'Invalid API Key supplied', 5 if $api_key eq '';
 
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 
@@ -48,4 +48,13 @@ SKIP: {
 	ok( $cm->templates($template_id)->{code} eq '200', 'Got template' );
 	ok( $cm->templates(%updated_template)->{code} eq '200', 'Updated template' );
 	ok( $cm->templates_delete($template_id)->{code} eq '200', 'Deleted template' );
+
+  # Create the template to be used for a template-based campaign
+  my %template_for_campaign = (
+    'HtmlPageURL'   => 'https://dl.dropbox.com/u/884452/cm/perl/template.html',
+    'Name'          => 'Template for Perl Wrapper Test',
+    'clientid'      => $client_id
+  );
+  my $created_template_for_campaign = $cm->templates(%template_for_campaign);
+  ok( $created_template_for_campaign->{code} eq '201', 'Created template for use in campaign' );
 }
