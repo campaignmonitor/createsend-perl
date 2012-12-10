@@ -1430,6 +1430,20 @@ sub campaigns_summary {
   return $results;
 }
 
+sub campaigns_emailclientusage {
+  my $self = shift;
+  my $campaign_id = $_[0];
+  my $results;
+
+  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/emailclientusage.".$self->{format});
+
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+
+  return $results;
+}
+
 sub campaigns_listsandsegments {
   my $self = shift;
   my $campaign_id = $_[0];
@@ -1907,6 +1921,12 @@ The campaignid must be in the hash.
 L<Campaign summary|http://www.campaignmonitor.com/api/campaigns/#campaign_summary>
 
   my $campaign_summary = $cm->campaigns_summary($campaign_id);
+
+=head2 campaigns_summary
+
+L<Campaign email client usage|http://www.campaignmonitor.com/api/campaigns/#campaign_email_client_usage>
+
+  my $email_client_usage = $cm->campaigns_emailclientusage($campaign_id);
 
 =head2 campaigns_listsandsegments
 

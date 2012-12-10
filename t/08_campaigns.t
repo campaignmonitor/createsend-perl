@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 16;
+use Test::More tests => 17;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 16 if $api_key eq '';
+	skip 'Invalid API Key supplied', 17 if $api_key eq '';
 
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 	my $list_id   = $cm->client_lists($client_id)->{response}->[0]->{ListID};
@@ -90,6 +90,7 @@ SKIP: {
 	ok( $cm->campaigns_send(%campaign_send)->{code} eq '200', 'Campaign sent' );
 	ok( $cm->campaigns_sendpreview(%campaign_sendpreview)->{code} eq '200', 'Campaign send previews' );
 	ok( $cm->campaigns_summary($campaign_id)->{code} eq '200', 'Campaign summary' );
+	ok( $cm->campaigns_emailclientusage($campaign_id)->{code} eq '200', 'Campaign email client usage' );
 	ok( $cm->campaigns_listsandsegments($campaign_id)->{code} eq '200', 'Campaign lists and segments' );
 	ok( $cm->campaigns_recipients(%paging_info)->{code} eq '200', 'Campaign recipients' );
 	ok( $cm->campaigns_bounces(%paging_info)->{code} eq '200', 'Campaign bounces' );
