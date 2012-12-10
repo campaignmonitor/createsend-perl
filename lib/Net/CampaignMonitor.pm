@@ -1623,6 +1623,33 @@ sub campaigns_unsubscribes {
   return $results;
 }
 
+sub campaigns_spam {
+  my $self = shift;
+  my (%input) = @_;
+  
+  unless( Params::Util::_POSINT($input{page}) ) {
+    $input{page} = 1;
+  }
+  unless( Params::Util::_POSINT($input{pagesize}) && $input{pagesize} >= 10 && $input{pagesize} <= 1000) {
+    $input{pagesize} = 1000;
+  }
+  unless( Params::Util::_STRING($input{orderfield}) && ($input{orderfield} eq 'email' || $input{orderfield} eq 'name' || $input{orderfield} eq 'date')) {
+    $input{orderfield} = 'date';
+  }
+  unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
+    $input{orderdirection} = 'asc';
+  }
+  
+  my $results;
+  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/spam.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
+  
+  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
+  $results->{'code'} = $self->{client}->responseCode();
+  $results->{'headers'} = $self->{client}->responseHeaders();
+  
+  return $results;
+}
+
 sub campaigns_delete {
   my $self = shift;
   my $campaign_id = $_[0];
@@ -2019,6 +2046,19 @@ L<Campaign clicks|http://www.campaignmonitor.com/api/campaigns/#campaign_clicksl
 L<Campaign unsubscribes|http://www.campaignmonitor.com/api/campaigns/#campaign_unsubscribeslist>
 
   my $campaign_unsubscribes = $cm->campaigns_unsubscribes (
+    'campaignid'     => $campaign_id,
+    'date'           => '1900-01-01',
+    'page'           => '1',
+    'pagesize'       => '100',
+    'orderfield'     => 'email',
+    'orderdirection' => 'asc',
+  ));
+
+=head2 campaigns_spam
+
+L<Campaign spam complaints|http://www.campaignmonitor.com/api/campaigns/#campaign_spam_complaints>
+
+  my $campaign_spam = $cm->campaigns_spam (
     'campaignid'     => $campaign_id,
     'date'           => '1900-01-01',
     'page'           => '1',

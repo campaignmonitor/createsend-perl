@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 18;
 use Net::CampaignMonitor;
 use Params::Util qw{_STRING};
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 17 if $api_key eq '';
+	skip 'Invalid API Key supplied', 18 if $api_key eq '';
 
 	my $client_id = $cm->account_clients()->{response}->[0]->{ClientID};
 	my $list_id   = $cm->client_lists($client_id)->{response}->[0]->{ListID};
@@ -97,6 +97,7 @@ SKIP: {
 	ok( $cm->campaigns_opens(%paging_info_date)->{code} eq '200', 'Campaign opens' );
 	ok( $cm->campaigns_clicks(%paging_info_date)->{code} eq '200', 'Campaign clicks' );
 	ok( $cm->campaigns_unsubscribes(%paging_info_date)->{code} eq '200', 'Campaign unsubscribes' );
+	ok( $cm->campaigns_spam(%paging_info_date)->{code} eq '200', 'Campaign spam complaints' );
 	ok( $cm->campaigns_delete($campaign_id)->{code} eq '200', 'Campaign deleted' );
 	
 	# Create a campaign using the template created in 07_templates.t
