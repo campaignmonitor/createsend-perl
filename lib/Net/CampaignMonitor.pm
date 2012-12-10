@@ -1769,7 +1769,7 @@ L<Creating a draft campaign|http://www.campaignmonitor.com/api/campaigns/#creati
 
 The clientid must be in the hash.
 
--head2 campaigns_fromtemplate
+=head2 campaigns_fromtemplate
 
 L<Creating a campaign from a template|http://www.campaignmonitor.com/api/campaigns/#creating_a_campaign_from_template>
 
