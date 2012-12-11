@@ -8,7 +8,7 @@ use REST::Client;
 use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
 use JSON;
 
-use version; our $VERSION = version->declare("v1.21.0");
+use version; our $VERSION = version->declare("v2.0.0");
 
 sub new {
   my ($class, $args) = @_;
@@ -1696,7 +1696,7 @@ Net::CampaignMonitor - A Perl wrapper for the Campaign Monitor API.
 
 =head1 VERSION
 
-This documentation refers to version v1.21.0.
+This documentation refers to version v2.0.0.
 
 =head1 SYNOPSIS
 

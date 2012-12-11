@@ -1,3 +1,25 @@
+v2.0.0 Tue 11 Dec 2012
+  - Added the ability to update a custom field name and preference visibility. 
+  - Added support for retrieving spam complaints for a campaign.
+  - Added support for retrieving unconfirmed subscribers for a list.
+  - Added support for getting campaign email client usage.
+  - Added support for creating a campaign from a template.
+  - Added support for unsuppressing an email address.
+  - Added support for suppressing email addresses.
+  - Added support for UnsubscribeSetting field when creating and updating a list.
+  - Added support for including AddUnsubscribesToSuppList and ScrubActiveWithSuppList fields when updating a list.
+  - Added support for getting all client lists to which a subscriber with a specific email address belongs.
+  - Added support for updating a subscriber.
+  - Added usage of the Clear option when importing subscribers.
+  - Added support for QueueSubscriptionBasedAutoResponders and RestartSubscriptionBasedAutoresponders where possible.
+  - Added support for deleting subscribers.
+  - Added support for getting deleted subscribers for a list.
+  - Added support for unscheduling campaigns.
+  - Added support for getting a client's scheduled campaigns.
+  - Added support for getting account billing details.
+  - Added support for transferring credits to/from a client.
+  - Removed client_setaccess, as it is no longer supported in the API.
+
 v1.21.0 Thu 26 Nov 2012
 	- User-Agent header is now perl-createsend-{version}
 
