@@ -8,7 +8,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 	
 	my $api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
 	
-	plan tests => 5;
+	plan tests => 6;
 
 	use_ok( 'Net::CampaignMonitor' );
 
@@ -31,10 +31,15 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
     secure  => 0,
   });
 
+  my $cm_flat = Net::CampaignMonitor->new(
+    secure  => 0,
+  );
+
   isa_ok( $cm_secure_apikey, 'Net::CampaignMonitor' );
   isa_ok( $cm_insecure_apikey, 'Net::CampaignMonitor' );
   isa_ok( $cm_secure, 'Net::CampaignMonitor' );
   isa_ok( $cm_insecure, 'Net::CampaignMonitor' );
+  isa_ok( $cm_flat, 'Net::CampaignMonitor' );
 }
 
 else {

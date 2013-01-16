@@ -7,11 +7,20 @@ use MIME::Base64;
 use REST::Client;
 use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
 use JSON;
+use Carp;
 
 use version; our $VERSION = version->declare("v2.0.0");
 
 sub new {
-  my ($class, $args) = @_;
+  my $class = shift;
+  my ($args) = @_;
+  unless( Params::Util::_HASH($args) ) {
+    if (@_ % 2 == 0) {
+      $args = { @_ };
+    } else {
+      croak 'Error parsing constructor arguments, no hashref and odd number of arguments supplied';
+    }
+  }
   my $self = bless($args, $class);
   $self->{format} = 'json';
   $self->{useragent} = 'createsend-perl-'.$Net::CampaignMonitor::VERSION;
