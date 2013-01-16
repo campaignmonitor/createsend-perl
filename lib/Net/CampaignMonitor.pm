@@ -7,11 +7,20 @@ use MIME::Base64;
 use REST::Client;
 use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
 use JSON;
+use Carp;
 
 use version; our $VERSION = version->declare("v2.0.0");
 
 sub new {
-  my ($class, $args) = @_;
+  my $class = shift;
+  my ($args) = @_;
+  unless( Params::Util::_HASH($args) ) {
+    if (@_ % 2 == 0) {
+      $args = { @_ };
+    } else {
+      croak 'Error parsing constructor arguments, no hashref and odd number of arguments supplied';
+    }
+  }
   my $self = bless($args, $class);
   $self->{format} = 'json';
   $self->{useragent} = 'createsend-perl-'.$Net::CampaignMonitor::VERSION;
@@ -77,79 +86,49 @@ sub decode {
 
 sub account_systemdate {
   my ($self) = @_;
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/systemdate.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_billingdetails {
   my ($self) = @_;
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/billingdetails.".$self->{format});
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_clients {
   if (scalar(@_) == 1) { # Get the list of clients
     my ($self) = @_;
-    my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients.".$self->{format});
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
   else { # Create a new client
     my $self = shift;
     my %request = @_;
     
     my $json_request = encode_json \%request;
-    my $results;
     
     $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients.".$self->{format}, $json_request);
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
 }
 
 sub account_countries {
   my ($self) = @_;
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/countries.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;  
+  return $self->_build_results();  
 }
 
 sub account_timezones {
   my ($self) = @_;
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/timezones.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_apikey {
@@ -161,11 +140,11 @@ sub account_apikey {
   $ua->agent($self->{useragent});
   $ua->default_header('Authorization' => 'Basic '.encode_base64($username.':'.$password));
   my $api_client = REST::Client->new({useragent => $ua});
-  my $results;
 
   $api_client->setFollow(1);
-  $api_client->setTimeout(60);
-  
+  $api_client->setTimeout(60); 
+  my $results;
+ 
   $api_client->GET($self->{protocol}.$self->{domain}."/api/v3/apikey.".$self->{format}."?siteurl=".$siteurl);
 
   $results->{'response'} = $self->decode( $api_client->responseContent() );
@@ -180,15 +159,10 @@ sub account_addadmin{
   my (%request) = @_;
 
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_updateadmin{
@@ -199,143 +173,92 @@ sub account_updateadmin{
   delete $request{email};
   
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}."?email=".$email, $json_request);
     
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_getadmins {
   my $self = shift;
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_getadmin{
   my $self = shift;
   my $email = $_[0];
-  my $results;
     
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}."?email=".$email);
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  return $results;
+
+  return $self->_build_results();
 }
 
 sub account_deleteadmin {
   my $self = shift;
   my $email = $_[0];
-  my $results;
     
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}."?email=".$email);
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_setprimarycontact {
   my $self = shift;
   my $email = $_[0];
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/primarycontact.".$self->{format}."?email=".$email);
     
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub account_getprimarycontact{
   my $self = shift;
-  my $results;
     
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/primarycontact.".$self->{format});
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  return $results;
+
+  return $self->_build_results();
 }
 
 
 sub client_clientid {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_campaigns {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/campaigns.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_drafts {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/drafts.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_scheduled {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/scheduled.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_lists {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/lists.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_listsforemail {
@@ -344,27 +267,17 @@ sub client_listsforemail {
   my $client_id = $request{clientid};
   my $email = $request{email};
 
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/listsforemail.".$self->{format}."?email=".$email);
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_segments {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/segments.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_suppressionlist {
@@ -384,14 +297,9 @@ sub client_suppressionlist {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$input{clientid}."/suppressionlist.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_suppress {
@@ -401,15 +309,10 @@ sub client_suppress {
   
   delete $request{clientid};
   my $json_request = encode_json \%request;
-  my $results;
 
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/suppress.".$self->{format}, $json_request);
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_unsuppress {
@@ -421,28 +324,18 @@ sub client_unsuppress {
   delete $request{clientid};
   delete $request{email};
   my $json_request = encode_json \%request;
-  my $results;
 
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/unsuppress.".$self->{format}."?email=".$email, $json_request);
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_templates {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/templates.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_setbasics {
@@ -453,15 +346,10 @@ sub client_setbasics {
   delete $request{clientid};
   
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/setbasics.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_setpaygbilling {
@@ -472,15 +360,10 @@ sub client_setpaygbilling {
   delete $request{clientid};
   
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/setpaygbilling.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_setmonthlybilling {
@@ -491,15 +374,10 @@ sub client_setmonthlybilling {
   delete $request{clientid};
   
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/setmonthlybilling.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_transfercredits {
@@ -509,28 +387,18 @@ sub client_transfercredits {
 
   delete $request{clientid};
   my $json_request = encode_json \%request;
-  my $results;
 
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/credits.".$self->{format}, $json_request);
 
-  $results->{'response'} = $self->decode($self->{client}->responseContent());
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_delete {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_addperson {
@@ -540,15 +408,10 @@ sub client_addperson {
   
   delete $request{clientid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 
@@ -562,28 +425,18 @@ sub client_updateperson {
   delete $request{email};
   
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email, $json_request);
     
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_getpeople {
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_getperson {
@@ -591,13 +444,10 @@ sub client_getperson {
   my (%request) = @_;
   my $client_id = $request{clientid};
   my $email = $request{email};
-  my $results;
     
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email);
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  return $results;
+
+  return $self->_build_results();
 }
 
 sub client_deleteperson {
@@ -605,14 +455,10 @@ sub client_deleteperson {
   my (%request) = @_;
   my $client_id = $request{clientid};
   my $email = $request{email};
-  my $results;
     
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email);
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+
+  return $self->_build_results();
 }
 
 sub client_setprimarycontact {
@@ -620,27 +466,19 @@ sub client_setprimarycontact {
   my (%request) = @_;
   my $client_id = $request{clientid};
   my $email = $request{email};  
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/primarycontact.".$self->{format}."?email=".$email);
     
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub client_getprimarycontact{
   my $self = shift;
   my $client_id = $_[0];
-  my $results;
     
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/primarycontact.".$self->{format});
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  return $results;
+
+  return $self->_build_results();
 }
 
 sub lists { # Create a list
@@ -650,15 +488,10 @@ sub lists { # Create a list
   
   delete $request{clientid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/lists/".$client_id.".".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_listid {
@@ -666,14 +499,9 @@ sub list_listid {
   
   if ( scalar(@_) == 1 ) { # Get the list details
     my $list_id = $_[0];
-    my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id.".".$self->{format});
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
   else { # Updating a list
     my (%request) = @_;
@@ -682,29 +510,19 @@ sub list_listid {
     delete $request{listid};
     
     my $json_request = encode_json \%request;
-    my $results;
     
     $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id.".".$self->{format}, $json_request);
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
 }
 
 sub list_stats {
   my $self = shift;
   my $list_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/stats.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_customfields {
@@ -712,14 +530,9 @@ sub list_customfields {
   
   if (scalar(@_) == 1) { # Get the custom field details
     my $list_id = $_[0];
-    my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields.".$self->{format});
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
   else { # Create a new custom field
     my (%request) = @_;
@@ -728,15 +541,10 @@ sub list_customfields {
     delete $request{listid};
     
     my $json_request = encode_json \%request;
-    my $results;
     
     $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields.".$self->{format}, $json_request);
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
 }
 
@@ -749,28 +557,18 @@ sub list_customfields_update {
   delete $request{listid};
   delete $request{customfieldkey};
   my $json_request = encode_json \%request;
-  my $results;
 
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields/".$key.".".$self->{format}, $json_request);
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_segments {
   my $self = shift;
   my $list_id = $_[0];
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/segments.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_active {
@@ -793,14 +591,9 @@ sub list_active {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/active.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_unconfirmed {
@@ -823,14 +616,9 @@ sub list_unconfirmed {
     $input{orderdirection} = 'asc';
   }
 
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/unconfirmed.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_unsubscribed {
@@ -853,14 +641,9 @@ sub list_unsubscribed {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/unsubscribed.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_deleted {
@@ -883,14 +666,9 @@ sub list_deleted {
     $input{orderdirection} = 'asc';
   }
 
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/deleted.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_bounced {
@@ -913,14 +691,9 @@ sub list_bounced {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/bounced.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_options {
@@ -933,15 +706,10 @@ sub list_options {
   delete $request{customfieldkey};
   
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields/".$customfield_key."/options.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_delete_customfieldkey {
@@ -949,29 +717,19 @@ sub list_delete_customfieldkey {
   my (%request) = @_;
   my $list_id = $request{listid};
   my $customfield_key = $request{customfieldkey};
-  my $results;
   
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields/".$customfield_key.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_delete {
   my $self = shift;
   my $list_id = $_[0];
-  my $results;
   
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_webhooks {
@@ -979,14 +737,9 @@ sub list_webhooks {
 
   if (scalar(@_) == 1) { #get the list of webhooks
     my $list_id = $_[0];
-    my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks.".$self->{format});
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
   else { #create a new webhook
     my (%request) = @_;
@@ -995,15 +748,10 @@ sub list_webhooks {
     delete $request{listid};
     
     my $json_request = encode_json \%request;
-    my $results;
     
     $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks.".$self->{format}, $json_request);
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
 }
 
@@ -1012,14 +760,9 @@ sub list_test {
   my (%request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id."/test.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_delete_webhook {
@@ -1027,15 +770,10 @@ sub list_delete_webhook {
   my (%request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  my $results;
   
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_activate {
@@ -1043,14 +781,9 @@ sub list_activate {
   my (%request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  my $results;
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id."/activate.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub list_deactivate {
@@ -1058,14 +791,9 @@ sub list_deactivate {
   my (%request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  my $results;
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id."/deactivate.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub segments {
@@ -1075,15 +803,10 @@ sub segments {
   
   delete $request{listid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/segments/".$list_id.".".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub segment_segmentid {
@@ -1091,14 +814,9 @@ sub segment_segmentid {
 
   if (scalar(@_) == 1) { #get the segment details
     my $segment_id = $_[0];
-    my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id.".".$self->{format});
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
   else { #update the segment
     my (%request) = @_;
@@ -1106,15 +824,10 @@ sub segment_segmentid {
     
     delete $request{segmentid};
     my $json_request = encode_json \%request;
-    my $results;
     
     $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id.".".$self->{format}, $json_request);
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
 }
 
@@ -1125,15 +838,10 @@ sub segment_rules {
   
   delete $request{segmentid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id."/rules.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub segment_active {
@@ -1156,42 +864,27 @@ sub segment_active {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/segments/".$input{segmentid}."/active.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub segment_delete {
   my $self = shift;
   my $segment_id = $_[0];
-  my $results;
   
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub segment_delete_rules {
   my $self = shift;
   my $segment_id = $_[0];
-  my $results;
   
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id."/rules.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub subscribers {
@@ -1202,26 +895,16 @@ sub subscribers {
   delete $request{listid};
 
   if ($request{email}) { # Get subscribers details
-    my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$request{email});
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
   else { # Add subscriber
     my $json_request = encode_json \%request;
-    my $results;
     
     $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}, $json_request);
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
 }
 
@@ -1234,15 +917,10 @@ sub subscribers_update {
   delete $request{listid};
   delete $request{email};
   my $json_request = encode_json \%request;
-  my $results;
 
   $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$email, $json_request);
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub subscribers_import {
@@ -1252,15 +930,10 @@ sub subscribers_import {
   
   delete $request{listid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id."/import.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub subscribers_history {
@@ -1269,14 +942,9 @@ sub subscribers_history {
   my $list_id   = $request{listid};
   my $email     = $request{email};
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id."/history.".$self->{format}."?email=".$email);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub subscribers_unsubscribe {
@@ -1286,15 +954,10 @@ sub subscribers_unsubscribe {
   
   delete $request{listid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id."/unsubscribe.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub subscribers_delete {
@@ -1302,15 +965,10 @@ sub subscribers_delete {
   my (%request) = @_;
   my $list_id   = $request{listid};
   my $email     = $request{email};
-  my $results;
 
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$email);
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub templates {
@@ -1318,14 +976,9 @@ sub templates {
 
   if ( scalar(@_) == 1 ) { #get the template details
     my $template_id = $_[0];
-    my $results;
     $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/templates/".$template_id.".".$self->{format});
     
-    $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-    $results->{'code'} = $self->{client}->responseCode();
-    $results->{'headers'} = $self->{client}->responseHeaders();
-    
-    return $results;
+    return $self->_build_results();
   }
   else {
     my (%request) = @_;
@@ -1334,30 +987,20 @@ sub templates {
       
       delete $request{templateid};
       my $json_request = encode_json \%request;
-      my $results;
       
       $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/templates/".$template_id.".".$self->{format}, $json_request);
       
-      $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-      $results->{'code'} = $self->{client}->responseCode();
-      $results->{'headers'} = $self->{client}->responseHeaders();
-      
-      return $results;
+      return $self->_build_results();
     }
     elsif ( $request{clientid} ) { #create a template
       my $client_id = $request{clientid};
       
       delete $request{clientid};
       my $json_request = encode_json \%request;
-      my $results;
       
       $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/templates/".$client_id.".".$self->{format}, $json_request);
       
-      $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-      $results->{'code'} = $self->{client}->responseCode();
-      $results->{'headers'} = $self->{client}->responseHeaders();
-      
-      return $results;
+      return $self->_build_results();
     }
   }
 }
@@ -1365,15 +1008,10 @@ sub templates {
 sub templates_delete {
   my $self = shift;
   my $template_id = $_[0];
-  my $results;
   
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/templates/".$template_id.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns {
@@ -1383,15 +1021,10 @@ sub campaigns {
   
   delete $request{clientid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$client_id.".".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_fromtemplate {
@@ -1401,15 +1034,10 @@ sub campaigns_fromtemplate {
 
   delete $request{clientid};
   my $json_request = encode_json \%request;
-  my $results;
 
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$client_id."/fromtemplate.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_send {
@@ -1419,15 +1047,10 @@ sub campaigns_send {
   
   delete $request{campaignid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/send.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_unschedule {
@@ -1437,15 +1060,10 @@ sub campaigns_unschedule {
 
   delete $request{campaignid};
   my $json_request = encode_json \%request;
-  my $results;
 
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/unschedule.".$self->{format}, $json_request);
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_sendpreview {
@@ -1455,57 +1073,37 @@ sub campaigns_sendpreview {
   
   delete $request{campaignid};
   my $json_request = encode_json \%request;
-  my $results;
   
   $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/sendpreview.".$self->{format}, $json_request);
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_summary {
   my $self = shift;
   my $campaign_id = $_[0];
-  my $results;
   
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/summary.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_emailclientusage {
   my $self = shift;
   my $campaign_id = $_[0];
-  my $results;
 
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/emailclientusage.".$self->{format});
 
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_listsandsegments {
   my $self = shift;
   my $campaign_id = $_[0];
-  my $results;
   
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/listsandsegments.".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_recipients {
@@ -1525,14 +1123,9 @@ sub campaigns_recipients {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/recipients.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_bounces {
@@ -1552,14 +1145,9 @@ sub campaigns_bounces {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/bounces.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_opens {
@@ -1579,14 +1167,9 @@ sub campaigns_opens {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/opens.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_clicks {
@@ -1606,14 +1189,9 @@ sub campaigns_clicks {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/clicks.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_unsubscribes {
@@ -1633,14 +1211,9 @@ sub campaigns_unsubscribes {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/unsubscribes.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_spam {
@@ -1660,27 +1233,27 @@ sub campaigns_spam {
     $input{orderdirection} = 'asc';
   }
   
-  my $results;
   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/spam.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
-  return $results;
+  return $self->_build_results();
 }
 
 sub campaigns_delete {
   my $self = shift;
   my $campaign_id = $_[0];
-  my $results;
   
   $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id.".".$self->{format});
   
-  $results->{'response'} = $self->decode( $self->{client}->responseContent() );
-  $results->{'code'} = $self->{client}->responseCode();
-  $results->{'headers'} = $self->{client}->responseHeaders();
-  
+  return $self->_build_results();
+}
+
+sub _build_results {
+  my ($self) = @_;
+  my $client = $self->{client};
+  my $results;
+  $results->{response}  = $self->decode( $client->responseContent() );
+  $results->{code}      = $client->responseCode();
+  $results->{headers}   = +{ map { $_ => scalar $client->responseHeader($_) } $client->responseHeaders() };
   return $results;
 }
 
