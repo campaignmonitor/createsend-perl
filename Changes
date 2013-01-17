@@ -1,3 +1,7 @@
+v2.0.1 Thu 17 Jan 2013
+  - Support flat hashed arguments to constructor.
+  - Response headers fixed. Response processing refactored into _build_results().
+
 v2.0.0 Tue 11 Dec 2012
   - Added the ability to update a custom field name and preference visibility. 
   - Added support for retrieving spam complaints for a campaign.
@@ -21,26 +25,26 @@ v2.0.0 Tue 11 Dec 2012
   - Removed client_setaccess, as it is no longer supported in the API.
 
 v1.21.0 Thu 26 Nov 2012
-	- User-Agent header is now perl-createsend-{version}
+  - User-Agent header is now perl-createsend-{version}
 
 v1.20.1 Thu 22 Nov 2012
-	- Moved to dotted decimal version number.
+  - Moved to dotted decimal version number.
 
 1.02 Fri 16 Nov 2012
-	- Added support to manage members (ie. Administrators, People)
+  - Added support to manage members (ie. Administrators, People)
 
 0.05 Wed 19 October 2011
-	- Fixed an error with the HTTP realm and other issues associated with this change.
+  - Fixed an error with the HTTP realm and other issues associated with this change.
 
 0.04 Fri 04 March 2011
-	- Modified the tests to require the user to enter the API key.
+  - Modified the tests to require the user to enter the API key.
 
 0.03 Fri 04 March 2011
-	- Added comment to the POD regarding test failure due to CM API limits.
-	- Removed apikey test.
+  - Added comment to the POD regarding test failure due to CM API limits.
+  - Removed apikey test.
 
 0.02 Wed 02 March 2011
-	- Corrected some errors in the POD.
+  - Corrected some errors in the POD.
 
 0.01 Tue 01 Mar 2011
-	- Creating initial implementation.
+  - Creating initial implementation.

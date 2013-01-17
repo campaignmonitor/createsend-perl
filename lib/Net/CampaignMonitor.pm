@@ -9,7 +9,7 @@ use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
 use JSON;
 use Carp;
 
-use version; our $VERSION = version->declare("v2.0.0");
+use version; our $VERSION = version->declare("v2.0.1");
 
 sub new {
   my $class = shift;
@@ -1269,7 +1269,7 @@ Net::CampaignMonitor - A Perl wrapper for the Campaign Monitor API.
 
 =head1 VERSION
 
-This documentation refers to version v2.0.0.
+This documentation refers to version v2.0.1.
 
 =head1 SYNOPSIS
 
