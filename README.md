@@ -36,7 +36,7 @@ Samples for each of the methods and further documentation is available on CPAN o
 3. Ensure that the build passes, by running:
 
     ```
-    export CAMPAIGN_MONTIOR_API_KEY={Your API key to use for running the tests}
+    export CAMPAIGN_MONITOR_API_KEY={Your API key to use for running the tests}
     cpanm --quiet --installdeps --notest .
     perl Makefile.PL && make test
     ```
