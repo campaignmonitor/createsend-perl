@@ -80,6 +80,42 @@ sub create_rest_client {
   return $client;
 }
 
+sub create_oauth_client {
+  my ($self) = @_;
+
+  my $ua = LWP::UserAgent->new;
+  $ua->agent($self->{useragent});
+  my $client = REST::Client->new({useragent => $ua});
+  $client->setFollow(1);
+  $client->setTimeout($self->{timeout});
+  return $client;
+}
+
+sub refresh_token {
+  my ($self) = @_;
+
+  if (!exists $self->{refresh_token} ||
+    (exists $self->{refresh_token} && !(Params::Util::_STRING($self->{refresh_token})))) {
+    croak 'Error refreshing OAuth token. No refresh token exists.';
+  }
+
+  my $oauth_client = $self->create_oauth_client();
+  my $body = 'grant_type=refresh_token&refresh_token='.$self->{refresh_token};
+  $oauth_client->POST($self->{protocol}.$self->{domain}.'/oauth/token', $body,
+    {'Content-type' => 'application/x-www-form-urlencoded'});
+  my $result = $self->decode($oauth_client->responseContent());
+
+  if (exists $result->{error}) {
+    croak 'Error refreshing OAuth token. '.$result->{error}.': '.$result->{error_description};
+  }
+
+  # Set the access token and refresh token, and re-create the client
+  $self->{access_token} = $result->{access_token};
+  $self->{refresh_token} = $result->{refresh_token};
+  $self->{client} = $self->create_rest_client();
+  return $result;
+}
+
 sub decode {
   my $self = shift;
   my $json = JSON->new->allow_nonref;
