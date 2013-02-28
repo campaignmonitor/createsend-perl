@@ -8,13 +8,31 @@ use REST::Client;
 use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
 use JSON;
 use Carp;
+use URI::Escape;
 
 use version; our $VERSION = version->declare("v2.0.1");
+our $CAMPAIGN_MONITOR_DOMAIN = 'api.createsend.com';
+
+sub authorize_url {
+  my $class = shift;
+  my ($args) = @_;
+  unless(Params::Util::_HASH($args)) {
+    $args = { @_ };
+  }
+  my $self = bless($args, $class);
+  my $qs = 'client_id='.uri_escape($self->{client_id});
+  $qs .= '&redirect_uri='.uri_escape($self->{redirect_uri});
+  $qs .= '&scope='.uri_escape($self->{scope});
+  if (exists $self->{state}) {
+    $qs .= '&state='.uri_escape($self->{state});
+  }
+  return 'https://'.$Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN.'/oauth?'.$qs;
+}
 
 sub new {
   my $class = shift;
   my ($args) = @_;
-  unless( Params::Util::_HASH($args) ) {
+  unless(Params::Util::_HASH($args)) {
     if (@_ % 2 == 0) {
       $args = { @_ };
     } else {
@@ -25,18 +43,16 @@ sub new {
   $self->{format} = 'json';
   $self->{useragent} = 'createsend-perl-'.$Net::CampaignMonitor::VERSION;
   unless( Params::Util::_STRING($self->{domain}) ) {
-    $self->{domain} = 'api.createsend.com';
+    $self->{domain} = $Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN;
   }
 
-  if ( $self->{secure} == 1) {
+  if ($self->{secure} == 1) {
     $self->{netloc}   = $self->{domain}.':443';
     $self->{protocol} = 'https://';
-  }
-  elsif ( $self->{secure} == 0) {
+  } elsif ($self->{secure} == 0) {
     $self->{netloc}   = $self->{domain}.':80';
     $self->{protocol} = 'http://';
-  }
-  else {
+  } else {
     $self->{netloc}   = $self->{domain}.':443';
     $self->{protocol} = 'https://';
   }
@@ -1342,13 +1358,28 @@ All methods return a hash containing the Campaign Monitor response code, the hea
 
 =head2 new
 
+If you want to authenticate using OAuth:
+
+  my $cm = Net::CampaignMonitor->new({
+    access_token => 'your access token',
+    refresh_token => 'your refresh token',
+    secure  => 1,
+    timeout => 300,
+  });
+
+Or if you want to authenticate using an API key:
+
   my $cm = Net::CampaignMonitor->new({
     api_key => 'abcd1234abcd1234abcd1234',
     secure  => 1,
     timeout => 300,
-    });
+  });
 
 Construct a new Net::CampaignMonitor object. Takes an optional hash reference of config options. The options are:
+
+access_token - The OAuth access token to use when making Campaign Monitor API requests.
+
+refresh_token - The OAuth refresh token to use to renew access_token when it expires.
 
 api_key - The api key for the Campaign Monitor account. If none is supplied the only function which will work is L<account_apikey|http://search.cpan.org/~jeffery/Net-CampaignMonitor-0.02/lib/Net/CampaignMonitor.pm#account_apikey>.
 

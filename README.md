@@ -17,7 +17,23 @@ The Campaign Monitor API supports authentication using either OAuth or an API ke
 
 ### Using OAuth
 
-TODO: Instructions...
+This library helps you authenticate using OAuth, as described in the Campaign Monitor API [documentation](http://www.campaignmonitor.com/api/getting-started/#authenticating_with_oauth). The authentication process is described below.
+
+The first thing your application should do is redirect your user to the Campaign Monitor authorization URL where they will have the opportunity to approve your application to access their Campaign Monitor account. You can get this authorization URL by using `Net::CampaignMonitor->authorize_url()`, like so:
+
+```perl
+use Net::CampaignMonitor;
+
+my $authorize_url = Net::CampaignMonitor->authorize_url(
+  client_id => 'Client ID for your application',
+  redirect_uri => 'Redirect URI for your application',
+  scope => 'The permission level your application requires',
+  state => 'Optional state data to be included'
+);
+# Redirect your users to $authorize_url.
+```
+
+TODO: Exchange token...
 
 Once you have an access token and refresh token for your user, you can authenticate and make further API calls like so:
 

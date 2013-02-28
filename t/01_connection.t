@@ -4,6 +4,10 @@ use strict;
 use Test::More;
 use Params::Util qw{_STRING};
 
+
+# TODO: Add tests for Net::CampaignMonitor->authorize_url()
+
+
 if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 	
 	my $api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
@@ -11,7 +15,6 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 	plan tests => 9;
 
 	use_ok( 'Net::CampaignMonitor' );
-
 
   my $cm_secure_apikey = Net::CampaignMonitor->new({
     secure  => 1,
