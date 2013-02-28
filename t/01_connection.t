@@ -9,7 +9,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 	
 	my $api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
 	
-	plan tests => 14;
+	plan tests => 13;
 
 	use_ok( 'Net::CampaignMonitor' );
 
