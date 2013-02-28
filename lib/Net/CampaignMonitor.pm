@@ -49,7 +49,11 @@ sub new {
     Carp::croak("Missing or invalid api key");
   }
 
-  if ( exists $self->{api_key} ) {
+  if ( (exists $self->{access_token} ) && !( Params::Util::_STRING( $self->{access_token} )) ) {
+    Carp::croak("Missing or invalid OAuth access token");
+  }
+
+  if ( exists $self->{api_key} || exists $self->{access_token} ) {
     # Create and initialise the rest client
     $self->{client} = $self->create_rest_client();
     $self->account_systemdate();
@@ -65,7 +69,11 @@ sub create_rest_client {
 
   my $ua = LWP::UserAgent->new;
   $ua->agent($self->{useragent});
-  $ua->default_header('Authorization' => 'Basic '.encode_base64($self->{api_key}.':x'));
+  if (exists $self->{access_token}) {
+    $ua->default_header('Authorization' => 'Bearer '.$self->{access_token});
+  } elsif (exists $self->{api_key}) {
+    $ua->default_header('Authorization' => 'Basic '.encode_base64($self->{api_key}.':x'));
+  }
   my $client = REST::Client->new({useragent => $ua});
   $client->setFollow(1);
   $client->setTimeout($self->{timeout});
