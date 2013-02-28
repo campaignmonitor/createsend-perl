@@ -5,14 +5,11 @@ use Test::More;
 use Params::Util qw{_STRING};
 
 
-# TODO: Add tests for Net::CampaignMonitor->authorize_url()
-
-
 if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 	
 	my $api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
 	
-	plan tests => 9;
+	plan tests => 14;
 
 	use_ok( 'Net::CampaignMonitor' );
 
@@ -51,7 +48,28 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 else {
-	plan tests => 1;
+	plan tests => 5;
 
 	use_ok( 'Net::CampaignMonitor' );
 }
+
+# Get authorize_url excluding state
+my $authorize_url = Net::CampaignMonitor->authorize_url(
+  client_id => 8998879,
+  redirect_uri => 'http://example.com/auth',
+  scope => 'ViewReports,CreateCampaigns,SendCampaigns'
+);
+
+ok(Params::Util::_STRING($authorize_url), '$authorize_url is a string');
+ok($authorize_url eq 'https://api.createsend.com/oauth?client_id=8998879&redirect_uri=http%3A%2F%2Fexample.com%2Fauth&scope=ViewReports%2CCreateCampaigns%2CSendCampaigns', '$authorize_url is as expected');
+
+# Get authorize_url including state
+$authorize_url = Net::CampaignMonitor->authorize_url(
+  client_id => 8998879,
+  redirect_uri => 'http://example.com/auth',
+  scope => 'ViewReports,CreateCampaigns,SendCampaigns',
+  state => 89879287
+);
+
+ok(Params::Util::_STRING($authorize_url), '$authorize_url is a string');
+ok($authorize_url eq 'https://api.createsend.com/oauth?client_id=8998879&redirect_uri=http%3A%2F%2Fexample.com%2Fauth&scope=ViewReports%2CCreateCampaigns%2CSendCampaigns&state=89879287', '$authorize_url is as expected');
