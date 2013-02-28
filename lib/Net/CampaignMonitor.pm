@@ -1354,7 +1354,18 @@ All methods return a hash containing the Campaign Monitor response code, the hea
     headers  => ''
   );
 
+=head2 authorize_url
+
+Get the authorization URL for your OAuth application, given the application's Client ID, Redirect URI, Permission scope, and optional state data. Takes 
+
 =head2 Construction and setup
+
+my $authorize_url = Net::CampaignMonitor->authorize_url({
+  client_id => 'Your app client ID',
+  redirect_uri => 'Redirect URI for your application',
+  scope => 'The permission scope required by your application',
+  state => 'Optional state data'
+});
 
 =head2 new
 
@@ -1386,6 +1397,20 @@ api_key - The api key for the Campaign Monitor account. If none is supplied the 
 secure - Set to 1 (secure) or 0 (insecure) to determine whether to use http or https. Defaults to secure.
 
 timeout - Set the timeout for the authentication. Defaults to 600 seconds.
+
+=head2 refresh_token
+
+Refresh the current OAuth access token using the current refresh token. After making this call successfully, you will be able to continue making further API calls.
+
+  my $new_token_details = $cm->refresh_token();
+
+The resulting variable @new_token_details will be of the form:
+
+{
+  'refresh_token' => 'new refresh token',
+  'expires_in' => 1209600, # seconds until the new access token expires
+  'access_token' => 'new access token'
+}
 
 =head2 account_clients
 
