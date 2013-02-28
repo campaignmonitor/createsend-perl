@@ -1406,11 +1406,11 @@ Refresh the current OAuth access token using the current refresh token. After ma
 
 The resulting variable @new_token_details will be of the form:
 
-{
-  'refresh_token' => 'new refresh token',
-  'expires_in' => 1209600, # seconds until the new access token expires
-  'access_token' => 'new access token'
-}
+  {
+    'refresh_token' => 'new refresh token',
+    'expires_in' => 1209600, # seconds until the new access token expires
+    'access_token' => 'new access token'
+  }
 
 =head2 account_clients
 
