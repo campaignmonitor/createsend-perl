@@ -2,6 +2,7 @@
 
 use strict;
 use Test::More;
+use Test::Exception;
 use Params::Util qw{_STRING};
 
 
@@ -9,7 +10,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 	
 	my $api_key = $ENV{'CAMPAIGN_MONITOR_API_KEY'};
 	
-	plan tests => 13;
+	plan tests => 16;
 
 	use_ok( 'Net::CampaignMonitor' );
 
@@ -48,7 +49,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 else {
-	plan tests => 5;
+	plan tests => 8;
 
 	use_ok( 'Net::CampaignMonitor' );
 }
@@ -73,3 +74,36 @@ $authorize_url = Net::CampaignMonitor->authorize_url(
 
 ok(Params::Util::_STRING($authorize_url), '$authorize_url is a string');
 ok($authorize_url eq 'https://api.createsend.com/oauth?client_id=8998879&redirect_uri=http%3A%2F%2Fexample.com%2Fauth&scope=ViewReports%2CCreateCampaigns%2CSendCampaigns&state=89879287', '$authorize_url is as expected');
+
+# Exchange OAuth token for access code - error case
+throws_ok {
+  my $token_details = Net::CampaignMonitor->exchange_token(
+    client_id => -432109,
+    client_secret => "not so secret",
+    redirect_uri => "https://example.com",
+    code => "code" ) }
+  qr/^Error exchanging OAuth code for access token.*/,
+  'exchange_token() should croak() if there is an error response from the OAuth receiver';
+
+
+# Refresh OAuth token error case - no refresh token set
+my $cm_refresh_error_no_token_set = Net::CampaignMonitor->new({
+  secure  => 1
+});
+
+throws_ok {
+  $cm_refresh_error_no_token_set->refresh_token() }
+  qr/^Error refreshing OAuth token. No refresh token exists./,
+  'refresh_token() should croak() if there is no refresh token set';
+
+# Refresh OAuth token error case - no refresh token set
+my $cm_refresh_error_from_post = Net::CampaignMonitor->new({
+  secure  => 1,
+  access_token => 'my access token',
+  refresh_token => 'my refresh token'
+});
+
+throws_ok {
+  $cm_refresh_error_from_post->refresh_token() }
+  qr/^Error refreshing OAuth token. invalid_grant: Specified refresh_token was invalid or expired/,
+  'refresh_token() should croak() if there is no refresh token set';
