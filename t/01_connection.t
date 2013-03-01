@@ -85,7 +85,6 @@ throws_ok {
   qr/^Error exchanging OAuth code for access token.*/,
   'exchange_token() should croak() if there is an error response from the OAuth receiver';
 
-
 # Refresh OAuth token error case - no refresh token set
 my $cm_refresh_error_no_token_set = Net::CampaignMonitor->new({
   secure  => 1
@@ -96,7 +95,7 @@ throws_ok {
   qr/^Error refreshing OAuth token. No refresh token exists./,
   'refresh_token() should croak() if there is no refresh token set';
 
-# Refresh OAuth token error case - no refresh token set
+# Refresh OAuth token error case - error response from OAuth receiver
 my $cm_refresh_error_from_post = Net::CampaignMonitor->new({
   secure  => 1,
   access_token => 'my access token',
@@ -106,4 +105,4 @@ my $cm_refresh_error_from_post = Net::CampaignMonitor->new({
 throws_ok {
   $cm_refresh_error_from_post->refresh_token() }
   qr/^Error refreshing OAuth token. invalid_grant: Specified refresh_token was invalid or expired/,
-  'refresh_token() should croak() if there is no refresh token set';
+  'refresh_token() should croak() if there is an error response from the OAuth receiver';
