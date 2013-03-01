@@ -33,7 +33,19 @@ my $authorize_url = Net::CampaignMonitor->authorize_url(
 # Redirect your users to $authorize_url.
 ```
 
-TODO: Exchange token...
+If your user approves your application, they will then be redirected to the `redirect_uri` you specified, which will include a `code` parameter, and optionally a `state` parameter in the query string. Your application should implement a handler which can exchange the code passed to it for an access token, using `Net::CampaignMonitor->exchange_token()` like so:
+
+```perl
+use Net::CampaignMonitor;
+
+my $token_details = Net::CampaignMonitor->exchange_token(
+  client_id => 'Client ID for your application',
+  client_secret => 'Client Secret for your application',
+  redirect_uri => 'Redirect URI for your application',
+  code => 'A unique code for your user' # Get the code parameter from the query string
+);
+# Save $token_details->{access_token}, $token_details->{expires_in}, and $token_details->{refresh_token}
+```
 
 Once you have an access token and refresh token for your user, you can authenticate and make further API calls like so:
 

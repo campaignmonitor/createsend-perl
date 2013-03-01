@@ -29,6 +29,30 @@ sub authorize_url {
   return 'https://'.$Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN.'/oauth?'.$qs;
 }
 
+sub exchange_token {
+  my $class = shift;
+  my ($args) = @_;
+  unless(Params::Util::_HASH($args)) {
+    $args = { @_ };
+  }
+  my $self = bless($args, $class);
+  my $oauth_client = Net::CampaignMonitor->create_oauth_client();
+  my $body = 'grant_type=authorization_code';
+  $body .= '&client_id='.uri_escape($self->{client_id});
+  $body .= '&client_secret='.uri_escape($self->{client_secret});
+  $body .= '&redirect_uri='.uri_escape($self->{redirect_uri});
+  $body .= '&code='.uri_escape($self->{code});
+
+  $oauth_client->POST('https://'.$Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN.'/oauth/token',
+    $body, {'Content-type' => 'application/x-www-form-urlencoded'});
+  my $result = $self->decode($oauth_client->responseContent());
+
+  if (exists $result->{error}) {
+    croak 'Error exchanging OAuth code for access token. '.$result->{error}.': '.$result->{error_description};
+  }
+  return $result;
+}
+
 sub new {
   my $class = shift;
   my ($args) = @_;
@@ -97,13 +121,10 @@ sub create_rest_client {
 }
 
 sub create_oauth_client {
-  my ($self) = @_;
-
   my $ua = LWP::UserAgent->new;
-  $ua->agent($self->{useragent});
   my $client = REST::Client->new({useragent => $ua});
   $client->setFollow(1);
-  $client->setTimeout($self->{timeout});
+  $client->setTimeout(600);
   return $client;
 }
 
@@ -114,9 +135,8 @@ sub refresh_token {
     (exists $self->{refresh_token} && !(Params::Util::_STRING($self->{refresh_token})))) {
     croak 'Error refreshing OAuth token. No refresh token exists.';
   }
-
-  my $oauth_client = $self->create_oauth_client();
-  my $body = 'grant_type=refresh_token&refresh_token='.$self->{refresh_token};
+  my $oauth_client = Net::CampaignMonitor->create_oauth_client();
+  my $body = 'grant_type=refresh_token&refresh_token='.uri_escape($self->{refresh_token});
   $oauth_client->POST($self->{protocol}.$self->{domain}.'/oauth/token', $body,
     {'Content-type' => 'application/x-www-form-urlencoded'});
   my $result = $self->decode($oauth_client->responseContent());
@@ -1343,29 +1363,42 @@ This documentation refers to version v2.0.1.
 =head1 DESCRIPTION
 
 B<Net::CampaignMonitor> provides a Perl wrapper for the Campaign Monitor API.
- 
+
 =head1 METHODS
 
-All methods return a hash containing the Campaign Monitor response code, the headers and the actual response.
-
-  my %results = (
-    code     => '',
-    response => '',
-    headers  => ''
-  );
+=head2 OAuth utility methods
 
 =head2 authorize_url
 
-Get the authorization URL for your OAuth application, given the application's Client ID, Redirect URI, Permission scope, and optional state data. Takes 
+Get the authorization URL for your OAuth application, given the application's Client ID, Redirect URI, Permission scope, and optional state data.
+
+  my $authorize_url = Net::CampaignMonitor->authorize_url({
+    client_id => 'Your app client ID',
+    redirect_uri => 'Redirect URI for your application',
+    scope => 'The permission scope required by your application',
+    state => 'Optional state data'
+  });
+
+=head2 exchange_token
+
+Exchange a unique OAuth code for an OAuth access token and refresh token.
+
+  my $token_details = Net::CampaignMonitor->exchange_token(
+    client_id => 'Client ID for your application',
+    client_secret => 'Client Secret for your application',
+    redirect_uri => 'Redirect URI for your application',
+    code => 'A unique code for your user' # Get the code parameter from the query string
+  );
+
+The resulting variable $token_details will be of the form:
+
+  {
+    'refresh_token' => 'refresh token',
+    'expires_in' => 1209600, # seconds until the access token expires
+    'access_token' => 'access token'
+  }
 
 =head2 Construction and setup
-
-my $authorize_url = Net::CampaignMonitor->authorize_url({
-  client_id => 'Your app client ID',
-  redirect_uri => 'Redirect URI for your application',
-  scope => 'The permission scope required by your application',
-  state => 'Optional state data'
-});
 
 =head2 new
 
@@ -1398,19 +1431,31 @@ secure - Set to 1 (secure) or 0 (insecure) to determine whether to use http or h
 
 timeout - Set the timeout for the authentication. Defaults to 600 seconds.
 
+=head2 OAuth-specific functionality
+
 =head2 refresh_token
 
 Refresh the current OAuth access token using the current refresh token. After making this call successfully, you will be able to continue making further API calls.
 
   my $new_token_details = $cm->refresh_token();
 
-The resulting variable @new_token_details will be of the form:
+The resulting variable $new_token_details will be of the form:
 
   {
     'refresh_token' => 'new refresh token',
     'expires_in' => 1209600, # seconds until the new access token expires
     'access_token' => 'new access token'
   }
+
+=head2 Core API functionality
+
+All the following methods return a hash containing the Campaign Monitor response code, the headers and the actual response.
+
+  my %results = (
+    code     => '',
+    response => '',
+    headers  => ''
+  );
 
 =head2 account_clients
 
