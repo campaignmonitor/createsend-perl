@@ -1353,12 +1353,13 @@ This documentation refers to version v2.0.1.
 
 =head1 SYNOPSIS
 
- use Net::CampaignMonitor;
- my $cm = Net::CampaignMonitor->new({
-    api_key => 'abcd1234abcd1234abcd1234',
+  use Net::CampaignMonitor;
+  my $cm = Net::CampaignMonitor->new({
+    access_token => 'your access token',
+    refresh_token => 'your refresh token',
     secure  => 1,
     timeout => 300,
-    });
+  });
 
 =head1 DESCRIPTION
 
