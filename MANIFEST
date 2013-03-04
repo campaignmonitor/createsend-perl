@@ -20,4 +20,5 @@ t/05_segments.t
 t/06_subscribers.t
 t/07_templates.t
 t/08_campaigns.t
+t/09_oauth.t
 t/99_cleanup.t

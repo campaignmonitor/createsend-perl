@@ -1,6 +1,9 @@
 language: perl
 env:
   secure: "KYCwN139LUiLsgBOmoXyOsEPYTKSNnxwD+7lfXaM7AgCsLBk5H86sq5Y6AWr\neT9rwBXLpM50OTEUQfmDQRkJUwzL1CKMNdtAFbDehIWyX+QYLLsgwP6yiM3A\n2nV5UKNwjH0c0EFnWgy80qootvtQIpJ1r9PQJ4lqGj61WItRfjw="
+  global:
+    - secure: "L+qmm8MMcMWxpUupk6+PYMv76uSHn+uDvo9WOEKhGpAabLEpRvhR5dgVfYyq\naufq3Py16bpM/eppAp4nbCUON5STi5oNyvt4QST9idfBfIGydZyzur5VYfOj\nvCyzA/9rPuxseCPpo0zl1xz8p+sbfFBBZQ5sytusof1G6WJBanE="
+    - secure: "dhyln8k5diGPwWVPuXw9N7EgrTG7l3n+Fq2+4ImKRbxpswzWNN8zuCzuxEJ2\nVmc2VKInhLc8FLaqZACDXidmYcHr9Zn8m87EQgaHFOx+aRLpwfYyKkXtBime\noIKOXpszukiWsWjH1a6VMXdcN/rU0XPE6nVhNx1M1X7oDwyrHnM="
 perl:
   - "5.14"
 matrix:
