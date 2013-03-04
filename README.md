@@ -89,17 +89,31 @@ my $cm = Net::CampaignMonitor->new({
 my $clients = $cm->account_clients();
 ```
 
-All methods return a hash containing the Campaign Monitor response code, the headers and the actual response.
+## Basic usage
+
+This example of listing all your clients and their campaigns demonstrates basic usage of the library and the data returned from the API.
 
 ```perl
-my %results = (
-  code     => '',
-  response => '',
-  headers  => ''
+use Net::CampaignMonitor;
+
+my $cm = Net::CampaignMonitor->new(
+  secure => 1,
+  access_token => 'your access token',
+  refresh_token => 'your refresh token'
 );
+
+foreach $cl (@{$cm->account_clients()->{response}}) {
+  print "Client: $cl->{Name}\n";
+  print "- Campaigns:\n";
+  foreach $ca (@{$cm->client_campaigns($cl->{ClientID})->{response}}) {
+    print "  - $ca->{Subject}\n";
+  }
+}
 ```
 
-Samples for each of the methods and further documentation is available on CPAN or perldocs, e.g.
+## Documentation
+
+Full documentation of the module is available on [CPAN](http://search.cpan.org/dist/Net-CampaignMonitor/lib/Net/CampaignMonitor.pm) or by using `perldoc`:
 
 ```
 perldoc Net::CampaignMonitor
