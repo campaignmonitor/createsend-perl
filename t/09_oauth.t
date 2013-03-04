@@ -34,7 +34,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_ACCESS_TOKEN'}) &&
   ok(Params::Util::_POSINT($results->{code}), 'Countries call using OAuth result code');
   ok($results->{code} eq '200', 'Countries call using OAuth result code of 200');
   ok(Params::Util::_HASH($results->{headers}), 'Countries call using OAuth result headers');
-  ok(Params::Util::_ARRAY0($results->{response}), 'Countries call using OAuth result response');
+  ok(Params::Util::_ARRAY($results->{response}), 'Countries call using OAuth result response');
 
 } else {
 	plan tests => 8;
