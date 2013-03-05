@@ -126,6 +126,8 @@ perldoc Net::CampaignMonitor
 
     ```
     export CAMPAIGN_MONITOR_API_KEY={Your API key to use for running the tests}
+    export CAMPAIGN_MONITOR_ACCESS_TOKEN={Your OAuth access token for running the tests}
+    export CAMPAIGN_MONITOR_REFRESH_TOKEN={Your OAuth refresh token for running the tests}
     cpanm --quiet --installdeps --notest .
     perl Makefile.PL && make test
     ```

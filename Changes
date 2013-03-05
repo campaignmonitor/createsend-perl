@@ -1,3 +1,6 @@
+v2.1.0 Whenever this is released
+  - Added support for authenticating using OAuth.
+
 v2.0.1 Thu 17 Jan 2013
   - Support flat hashed arguments to constructor.
   - Response headers fixed. Response processing refactored into _build_results().
