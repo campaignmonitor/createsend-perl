@@ -1,3 +1,6 @@
+v2.0.2 Fri 15 Mar 2013
+  - Fixed package.pl script to ensure that Mac OS X tar doesn't include ._* files when creating an archive.
+
 v2.0.1 Thu 17 Jan 2013
   - Support flat hashed arguments to constructor.
   - Response headers fixed. Response processing refactored into _build_results().
