@@ -32,4 +32,4 @@ resources:
   bugtracker: https://github.com/campaignmonitor/createsend-perl/issues
   homepage: http://campaignmonitor.github.com/createsend-perl/
   repository: https://github.com/campaignmonitor/createsend-perl.git
-version: v2.0.1
+version: v2.0.2

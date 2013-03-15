@@ -10,7 +10,7 @@ use JSON;
 use Carp;
 use URI::Escape;
 
-use version; our $VERSION = version->declare("v2.0.1");
+use version; our $VERSION = version->declare("v2.0.2");
 our $CAMPAIGN_MONITOR_DOMAIN = 'api.createsend.com';
 
 sub authorize_url {
@@ -1349,7 +1349,7 @@ Net::CampaignMonitor - A Perl wrapper for the Campaign Monitor API.
 
 =head1 VERSION
 
-This documentation refers to version v2.0.1.
+This documentation refers to version v2.0.2.
 
 =head1 SYNOPSIS
 
