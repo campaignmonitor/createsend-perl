@@ -5,9 +5,10 @@ use strict;
 use 5.008005;
 use MIME::Base64;
 use REST::Client;
-use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE};
+use Params::Util qw{_STRING _NONNEGINT _POSINT _HASH _HASHLIKE _ARRAY};
 use JSON;
 use Carp;
+use URI;
 use URI::Escape;
 
 use version; our $VERSION = version->declare("v2.1.0");
@@ -20,13 +21,14 @@ sub authorize_url {
     $args = { @_ };
   }
   my $self = bless($args, $class);
-  my $qs = 'client_id='.uri_escape($self->{client_id});
-  $qs .= '&redirect_uri='.uri_escape($self->{redirect_uri});
-  $qs .= '&scope='.uri_escape($self->{scope});
-  if (exists $self->{state}) {
-    $qs .= '&state='.uri_escape($self->{state});
-  }
-  return 'https://'.$Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN.'/oauth?'.$qs;
+
+  my $uri = URI->new('https://'.$Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN.'/oauth');
+
+  my @query = map { $_ => $self->{$_} } qw(client_id redirect_uri scope);
+  push @query, state => $self->{state} if exists $self->{state};
+  $uri->query_form(\@query);
+
+  return $uri->as_string;
 }
 
 sub exchange_token {
@@ -37,11 +39,9 @@ sub exchange_token {
   }
   my $self = bless($args, $class);
   my $oauth_client = Net::CampaignMonitor->create_oauth_client();
+
   my $body = 'grant_type=authorization_code';
-  $body .= '&client_id='.uri_escape($self->{client_id});
-  $body .= '&client_secret='.uri_escape($self->{client_secret});
-  $body .= '&redirect_uri='.uri_escape($self->{redirect_uri});
-  $body .= '&code='.uri_escape($self->{code});
+  $body .= "&$_=" . uri_escape($self->{$_}) for qw(client_id client_secret redirect_uri code);
 
   $oauth_client->POST('https://'.$Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN.'/oauth/token',
     $body, {'Content-type' => 'application/x-www-form-urlencoded'});
@@ -70,16 +70,13 @@ sub new {
     $self->{domain} = $Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN;
   }
 
-  if ($self->{secure} == 1) {
-    $self->{netloc}   = $self->{domain}.':443';
-    $self->{protocol} = 'https://';
-  } elsif ($self->{secure} == 0) {
-    $self->{netloc}   = $self->{domain}.':80';
-    $self->{protocol} = 'http://';
-  } else {
-    $self->{netloc}   = $self->{domain}.':443';
-    $self->{protocol} = 'https://';
-  }
+  my $uri = URI->new;
+  $self->{secure} = 1 unless defined $self->{secure};
+  $uri->scheme($self->{secure} ? 'https' : 'http');
+  $uri->host($self->{domain});
+  $self->{base_uri} = $uri;
+
+  $self->{base_path} = ['api', 'v3'];
 
   unless( Params::Util::_POSINT($self->{timeout}) ) {
     $self->{timeout} = 600;
@@ -155,7 +152,7 @@ sub refresh_token {
 sub decode {
   my $self = shift;
   my $json = JSON->new->allow_nonref;
-  
+
   if ( length $_[0] == 0 ) {
     return {};
   }
@@ -166,14 +163,14 @@ sub decode {
 
 sub account_systemdate {
   my ($self) = @_;
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/systemdate.".$self->{format});
-  
+  $self->_rest(GET => 'systemdate');
+
   return $self->_build_results();
 }
 
 sub account_billingdetails {
   my ($self) = @_;
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/billingdetails.".$self->{format});
+  $self->_rest(GET => 'billingdetails');
 
   return $self->_build_results();
 }
@@ -181,189 +178,170 @@ sub account_billingdetails {
 sub account_clients {
   if (scalar(@_) == 1) { # Get the list of clients
     my ($self) = @_;
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients.".$self->{format});
-    
+    $self->_rest(GET => 'clients');
+
     return $self->_build_results();
   }
   else { # Create a new client
-    my $self = shift;
-    my %request = @_;
-    
-    my $json_request = encode_json \%request;
-    
-    $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients.".$self->{format}, $json_request);
-    
+    my ($self, %request) = @_;
+
+    $self->_rest(POST => 'clients', undef, \%request);
+
     return $self->_build_results();
   }
 }
 
 sub account_countries {
   my ($self) = @_;
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/countries.".$self->{format});
-  
-  return $self->_build_results();  
+  $self->_rest(GET => 'countries');
+
+  return $self->_build_results();
 }
 
 sub account_timezones {
   my ($self) = @_;
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/timezones.".$self->{format});
-  
+  $self->_rest(GET => 'timezones');
+
   return $self->_build_results();
 }
 
 sub account_apikey {
-  my $self = shift;
-  my $siteurl = $_[0];
-  my $username = $_[1];
-  my $password = $_[2];
+  my ($self, $siteurl, $username, $password) = @_;
+
   my $ua = LWP::UserAgent->new;
   $ua->agent($self->{useragent});
   $ua->default_header('Authorization' => 'Basic '.encode_base64($username.':'.$password));
   my $api_client = REST::Client->new({useragent => $ua});
 
   $api_client->setFollow(1);
-  $api_client->setTimeout(60); 
-  my $results;
- 
-  $api_client->GET($self->{protocol}.$self->{domain}."/api/v3/apikey.".$self->{format}."?siteurl=".$siteurl);
+  $api_client->setTimeout(60);
 
-  $results->{'response'} = $self->decode( $api_client->responseContent() );
-  $results->{'code'} = $api_client->responseCode();
-  $results->{'headers'} = $api_client->responseHeaders();
-  
-  return $results;
+  my $uri = $self->_build_uri('format', { siteurl => $siteurl });
+  $api_client->GET($uri->as_string);
+
+  return $self->_build_results($api_client);
 }
 
-sub account_addadmin{ 
-  my $self = shift;
-  my (%request) = @_;
+sub account_addadmin{
+  my ($self, %request) = @_;
 
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}, $json_request);
-  
+  $self->_rest(POST => 'admins', undef, \%request);
+
   return $self->_build_results();
 }
 
 sub account_updateadmin{
-  my $self = shift;
-  my (%request) = @_;
-  my $email = $request{email};
-  
-  delete $request{email};
-  
+  my ($self, %request) = @_;
+  my $email = delete $request{email};
+
   my $json_request = encode_json \%request;
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}."?email=".$email, $json_request);
-    
+
+  $self->_rest(PUT => 'admins', { email => $email }, $json_request);
+
   return $self->_build_results();
 }
 
 sub account_getadmins {
-  my $self = shift;
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format});
-  
+  my ($self) = @_;
+  $self->_rest(GET => 'admins');
+
   return $self->_build_results();
 }
 
-sub account_getadmin{
-  my $self = shift;
-  my $email = $_[0];
-    
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}."?email=".$email);
+sub account_getadmin {
+  my ($self, $email) = @_;
+
+  $self->_rest(GET => 'admins', { email => $email });
 
   return $self->_build_results();
 }
 
 sub account_deleteadmin {
-  my $self = shift;
-  my $email = $_[0];
-    
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/admins.".$self->{format}."?email=".$email);
+  my ($self, $email) = @_;
+
+  $self->_rest(DELETE => 'admins', { email => $email });
+
   return $self->_build_results();
 }
 
 sub account_setprimarycontact {
-  my $self = shift;
-  my $email = $_[0];
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/primarycontact.".$self->{format}."?email=".$email);
-    
-  return $self->_build_results();
-}
+  my ($self, $email) = @_;
 
-sub account_getprimarycontact{
-  my $self = shift;
-    
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/primarycontact.".$self->{format});
+  $self->_rest(PUT => 'primarycontact', { email => $email });
 
   return $self->_build_results();
 }
 
+sub account_getprimarycontact {
+  my ($self) = @_;
+
+  $self->_rest(GET => 'primarycontact');
+
+  return $self->_build_results();
+}
 
 sub client_clientid {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id.".".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id ]);
+
   return $self->_build_results();
 }
 
 sub client_campaigns {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/campaigns.".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'campaigns' ]);
+
   return $self->_build_results();
 }
 
 sub client_drafts {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/drafts.".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'drafts' ]);
+
   return $self->_build_results();
 }
 
 sub client_scheduled {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/scheduled.".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'scheduled' ]);
+
   return $self->_build_results();
 }
 
 sub client_lists {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/lists.".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'lists' ]);
+
   return $self->_build_results();
 }
 
 sub client_listsforemail {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  my $email = $request{email};
+  my ($self, %request) = @_;
+  my $client_id  = $request{clientid};
+  my $email      = $request{email};
 
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/listsforemail.".$self->{format}."?email=".$email);
+  $self->_rest(GET => [ clients => $client_id, 'suppressionlist' ]);
 
   return $self->_build_results();
 }
 
 sub client_segments {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/segments.".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'segments' ]);
+
   return $self->_build_results();
 }
 
 sub client_suppressionlist {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $client_id = delete $input{clientid};
+
   unless( Params::Util::_POSINT($input{page}) ) {
     $input{page} = 1;
   }
@@ -376,285 +354,225 @@ sub client_suppressionlist {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$input{clientid}."/suppressionlist.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
+
+  $self->_rest(GET => [ clients => $client_id, 'suppressionlist' ], \%input);
 
   return $self->_build_results();
 }
 
 sub client_suppress {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  
-  delete $request{clientid};
-  my $json_request = encode_json \%request;
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
 
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/suppress.".$self->{format}, $json_request);
+  $self->_rest(POST => [ clients => $client_id, 'suppress' ], undef, \%request);
 
   return $self->_build_results();
 }
 
 sub client_unsuppress {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  my $email = $request{email};
-  
-  delete $request{clientid};
-  delete $request{email};
-  my $json_request = encode_json \%request;
+  my ($self, %request) = @_;
+  my $client_id  = delete $request{clientid};
+  my $email      = delete $request{email};
 
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/unsuppress.".$self->{format}."?email=".$email, $json_request);
+  $self->_rest(PUT => [ clients => $client_id, 'unsuppress' ], { email => $email }, \%request);
 
   return $self->_build_results();
 }
 
 sub client_templates {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/templates.".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'templates' ]);
+
   return $self->_build_results();
 }
 
 sub client_setbasics {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  
-  delete $request{clientid};
-  
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/setbasics.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
+
+  $self->_rest(PUT => [ clients => $client_id, 'setbasics' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub client_setpaygbilling {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  
-  delete $request{clientid};
-  
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/setpaygbilling.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
+
+  $self->_rest(PUT => [ clients => $client_id, 'setpaygbilling' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub client_setmonthlybilling {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  
-  delete $request{clientid};
-  
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/setmonthlybilling.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
+
+  $self->_rest(PUT => [ clients => $client_id, 'setmonthlybilling' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub client_transfercredits {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
 
-  delete $request{clientid};
-  my $json_request = encode_json \%request;
-
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/credits.".$self->{format}, $json_request);
+  $self->_rest(POST => [ clients  => $client_id, 'credits' ], undef, \%request);
 
   return $self->_build_results();
 }
 
 sub client_delete {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id.".".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(DELETE => [ clients  => $client_id ]);
+
   return $self->_build_results();
 }
 
 sub client_addperson {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  
-  delete $request{clientid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
+
+  $self->_rest(POST => [ clients  => $client_id, 'people' ], undef, \%request);
+
   return $self->_build_results();
 }
 
-
 sub client_updateperson {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  my $email = $request{email};
-  
-  delete $request{clientid};
-  delete $request{email};
-  
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email, $json_request);
-    
+  my ($self, %request) = @_;
+  my $client_id  = delete $request{clientid};
+  my $email      = delete $request{email};
+
+  $self->_rest(PUT => [ clients => $client_id, 'people' ], { email => $email }, \%request);
+
   return $self->_build_results();
 }
 
 sub client_getpeople {
-  my $self = shift;
-  my $client_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format});
-  
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'people' ]);
+
   return $self->_build_results();
 }
 
 sub client_getperson {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  my $email = $request{email};
-    
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email);
+  my ($self, %request) = @_;
+  my $client_id  = $request{clientid};
+  my $email      = $request{email};
+
+  $self->_rest(GET => [ clients => $client_id, 'people' ], { email => $email });
 
   return $self->_build_results();
 }
 
 sub client_deleteperson {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  my $email = $request{email};
-    
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/people.".$self->{format}."?email=".$email);
+  my ($self, %request) = @_;
+  my $client_id  = $request{clientid};
+  my $email      = $request{email};
+
+  $self->_rest(DELETE => [ clients => $client_id, 'people' ], { email => $email });
 
   return $self->_build_results();
 }
 
 sub client_setprimarycontact {
-  my $self = shift;
-  my (%request) = @_;
+  my ($self, %request) = @_;
   my $client_id = $request{clientid};
-  my $email = $request{email};  
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/primarycontact.".$self->{format}."?email=".$email);
-    
+  my $email = $request{email};
+
+  $self->_rest(PUT => [ clients => $client_id, 'primarycontact' ], { email => $email });
+
   return $self->_build_results();
 }
 
-sub client_getprimarycontact{
-  my $self = shift;
-  my $client_id = $_[0];
-    
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/clients/".$client_id."/primarycontact.".$self->{format});
+sub client_getprimarycontact {
+  my ($self, $client_id) = @_;
+
+  $self->_rest(GET => [ clients => $client_id, 'primarycontact' ]);
 
   return $self->_build_results();
 }
 
 sub lists { # Create a list
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  
-  delete $request{clientid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/lists/".$client_id.".".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
+
+  $self->_rest(POST => [ lists => $client_id ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub list_listid {
   my $self = shift;
-  
-  if ( scalar(@_) == 1 ) { # Get the list details
+
+  if ( @_ == 1 ) { # Get the list details
     my $list_id = $_[0];
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id.".".$self->{format});
-    
+    $self->_rest(GET => [ lists => $list_id ]);
+
     return $self->_build_results();
   }
   else { # Updating a list
     my (%request) = @_;
-    my $list_id = $request{listid};
-  
-    delete $request{listid};
-    
-    my $json_request = encode_json \%request;
-    
-    $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id.".".$self->{format}, $json_request);
-    
+    my $list_id = delete $request{listid};
+
+    $self->_rest(PUT => [ lists => $list_id ], undef, \%request);
+
     return $self->_build_results();
   }
 }
 
 sub list_stats {
-  my $self = shift;
-  my $list_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/stats.".$self->{format});
-  
+  my ($self, $list_id) = @_;
+
+  $self->_rest(GET => [ lists => $list_id, 'stats' ]);
+
   return $self->_build_results();
 }
 
 sub list_customfields {
   my $self = shift;
-  
+
   if (scalar(@_) == 1) { # Get the custom field details
     my $list_id = $_[0];
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields.".$self->{format});
-    
+    $self->_rest(GET => [ lists => $list_id, 'customfields' ]);
+
     return $self->_build_results();
   }
   else { # Create a new custom field
     my (%request) = @_;
-    my $list_id = $request{listid};
+    my $list_id = delete $request{listid};
 
-    delete $request{listid};
-    
-    my $json_request = encode_json \%request;
-    
-    $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields.".$self->{format}, $json_request);
-    
+    $self->_rest(POST => [ lists => $list_id, 'customfields' ], undef, \%request);
+
     return $self->_build_results();
   }
 }
 
 sub list_customfields_update {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id   = $request{listid};
-  my $key     = $request{customfieldkey};
+  my ($self, %request) = @_;
+  my $list_id  = delete $request{listid};
+  my $key      = delete $request{customfieldkey};
 
-  delete $request{listid};
-  delete $request{customfieldkey};
-  my $json_request = encode_json \%request;
-
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields/".$key.".".$self->{format}, $json_request);
+  $self->_rest(PUT => [ lists => $list_id, customfields => $key ], undef, \%request);
 
   return $self->_build_results();
 }
 
 sub list_segments {
-  my $self = shift;
-  my $list_id = $_[0];
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/segments.".$self->{format});
-  
+  my ($self, $list_id) = @_;
+
+  $self->_rest(GET => [ lists => $list_id, 'segments' ]);
+
   return $self->_build_results();
 }
 
 sub list_active {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $list_id = delete $input{listid};
+
   unless( Params::Util::_STRING($input{date}) ) {
     $input{date} = '';
   }
@@ -670,15 +588,15 @@ sub list_active {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/active.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ lists => $list_id, 'active' ], \%input);
+
   return $self->_build_results();
 }
 
 sub list_unconfirmed {
-  my $self = shift;
-  my (%input) = @_;
+  my ($self, %input) = @_;
+  my $list_id = delete $input{listid};
 
   unless( Params::Util::_STRING($input{date}) ) {
     $input{date} = '';
@@ -696,15 +614,15 @@ sub list_unconfirmed {
     $input{orderdirection} = 'asc';
   }
 
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/unconfirmed.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
+  $self->_rest(GET => [ lists => $list_id, 'active' ], \%input);
 
   return $self->_build_results();
 }
 
 sub list_unsubscribed {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $list_id = delete $input{listid};
+
   unless( Params::Util::_STRING($input{date}) ) {
     $input{date} = '';
   }
@@ -720,15 +638,15 @@ sub list_unsubscribed {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/unsubscribed.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ lists => $list_id, 'unsubscribed' ], \%input);
+
   return $self->_build_results();
 }
 
 sub list_deleted {
-  my $self = shift;
-  my (%input) = @_;
+  my ($self, %input) = @_;
+  my $list_id = delete $input{listid};
 
   unless( Params::Util::_STRING($input{date}) ) {
     $input{date} = '';
@@ -746,15 +664,15 @@ sub list_deleted {
     $input{orderdirection} = 'asc';
   }
 
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/deleted.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+  $self->_rest(GET => [ lists => $list_id, 'deleted' ], \%input);
+
   return $self->_build_results();
 }
 
 sub list_bounced {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $list_id = delete $input{listid};
+
   unless( Params::Util::_STRING($input{date}) ) {
     $input{date} = '';
   }
@@ -770,45 +688,37 @@ sub list_bounced {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/bounced.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ lists => $list_id, 'bounced' ], \%input);
+
   return $self->_build_results();
 }
 
 sub list_options {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id = $request{listid};
-  my $customfield_key = $request{customfieldkey};
+  my ($self, %request) = @_;
+  my $list_id = delete $request{listid};
+  my $customfield_key = delete $request{customfieldkey};
 
-  delete $request{listid};
-  delete $request{customfieldkey};
-  
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields/".$customfield_key."/options.".$self->{format}, $json_request);
-  
+  $self->_rest(PUT => [ lists => $list_id, customfields => $customfield_key, 'options' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub list_delete_customfieldkey {
-  my $self = shift;
-  my (%request) = @_;
+  my ($self, %request) = @_;
   my $list_id = $request{listid};
   my $customfield_key = $request{customfieldkey};
-  
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/customfields/".$customfield_key.".".$self->{format});
-  
+
+  $self->_rest(DELETE => [ lists => $list_id, customfields => $customfield_key ]);
+
   return $self->_build_results();
 }
 
 sub list_delete {
-  my $self = shift;
-  my $list_id = $_[0];
-  
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id.".".$self->{format});
-  
+  my ($self, $list_id) = @_;
+
+  $self->_rest(DELETE => [ lists => $list_id ]);
+
   return $self->_build_results();
 }
 
@@ -817,75 +727,66 @@ sub list_webhooks {
 
   if (scalar(@_) == 1) { #get the list of webhooks
     my $list_id = $_[0];
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks.".$self->{format});
-    
+    $self->_rest(GET => [ lists => $list_id, 'webhooks' ]);
+
     return $self->_build_results();
   }
   else { #create a new webhook
     my (%request) = @_;
-    my $list_id = $request{listid};
-  
-    delete $request{listid};
-    
-    my $json_request = encode_json \%request;
-    
-    $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks.".$self->{format}, $json_request);
-    
+    my $list_id = delete $request{listid};
+
+    $self->_rest(POST => [ lists => $list_id, 'webhooks' ], undef, \%request);
+
     return $self->_build_results();
   }
 }
 
 sub list_test {
-  my $self = shift;
-  my (%request) = @_;
+  my ($self, %request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id."/test.".$self->{format});
-  
+
+  $self->_rest(GET => [ lists => $list_id, webhooks => $webhook_id, 'test' ]);
+
   return $self->_build_results();
 }
 
 sub list_delete_webhook {
-  my $self = shift;
-  my (%request) = @_;
+  my ($self, %request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id.".".$self->{format});
-  
+
+  $self->_rest(DELETE => [ lists => $list_id, webhooks => $webhook_id ]);
+
   return $self->_build_results();
 }
 
 sub list_activate {
-  my $self = shift;
-  my (%request) = @_;
+  my ($self, %request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id."/activate.".$self->{format});
-  
+
+  $self->_rest(PUT => [ lists => $list_id, webhooks => $webhook_id, 'activate' ]);
+
   return $self->_build_results();
 }
 
 sub list_deactivate {
-  my $self = shift;
-  my (%request) = @_;
+  my ($self, %request) = @_;
   my $list_id = $request{listid};
   my $webhook_id = $request{webhookid};
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/lists/".$list_id."/webhooks/".$webhook_id."/deactivate.".$self->{format});
-  
+
+  $self->_rest(PUT => [ lists => $list_id, webhooks => $webhook_id, 'deactivate' ]);
+
   return $self->_build_results();
 }
 
 sub segments {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id = $request{listid};
-  
-  delete $request{listid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/segments/".$list_id.".".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $list_id = delete $request{listid};
+
+  $self->_rest(POST => [ segments => $list_id ], undef, \%request);
+
   return $self->_build_results();
 }
 
@@ -894,39 +795,32 @@ sub segment_segmentid {
 
   if (scalar(@_) == 1) { #get the segment details
     my $segment_id = $_[0];
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id.".".$self->{format});
-    
+    $self->_rest(GET => [ segments => $segment_id ]);
+
     return $self->_build_results();
   }
   else { #update the segment
     my (%request) = @_;
-    my $segment_id = $request{segmentid};
-    
-    delete $request{segmentid};
-    my $json_request = encode_json \%request;
-    
-    $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id.".".$self->{format}, $json_request);
-    
+    my $segment_id = delete $request{segmentid};
+
+    $self->_rest(PUT => [ segments => $segment_id ], undef, \%request);
+
     return $self->_build_results();
   }
 }
 
 sub segment_rules {
-  my $self = shift;
-  my (%request) = @_;
-  my $segment_id = $request{segmentid};
-  
-  delete $request{segmentid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id."/rules.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $segment_id = delete $request{segmentid};
+
+  $self->_rest(POST => [ segments => $segment_id, 'rules' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub segment_active {
-  my $self = shift;
-  my (%input) = @_;
+  my ($self, %input) = @_;
+  my $segment_id = delete $input{segmentid};
 
   unless( Params::Util::_STRING($input{date}) ) {
     $input{date} = '';
@@ -943,110 +837,89 @@ sub segment_active {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/segments/".$input{segmentid}."/active.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ segments => $segment_id, 'active' ], \%input);
+
   return $self->_build_results();
 }
 
 sub segment_delete {
-  my $self = shift;
-  my $segment_id = $_[0];
-  
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id.".".$self->{format});
-  
+  my ($self, $segment_id) = @_;
+
+  $self->_rest(DELETE => [ segments => $segment_id ]);
+
   return $self->_build_results();
 }
 
 sub segment_delete_rules {
-  my $self = shift;
-  my $segment_id = $_[0];
-  
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/segments/".$segment_id."/rules.".$self->{format});
-  
+  my ($self, $segment_id) = @_;
+
+  $self->_rest(DELETE => [ segments => $segment_id, 'rules' ]);
+
   return $self->_build_results();
 }
 
 sub subscribers {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id = $request{listid};
-
-  delete $request{listid};
+  my ($self, %request) = @_;
+  my $list_id = delete $request{listid};
 
   if ($request{email}) { # Get subscribers details
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$request{email});
-    
+    $self->_rest(GET => [ subscribers => $list_id ], { email => $request{email} });
+
     return $self->_build_results();
   }
   else { # Add subscriber
-    my $json_request = encode_json \%request;
-    
-    $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}, $json_request);
-    
+
+    $self->_rest(POST => [ subscribers => $list_id ], undef, \%request);
+
     return $self->_build_results();
   }
 }
 
 sub subscribers_update {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id   = $request{listid};
-  my $email     = $request{email};
+  my ($self, %request) = @_;
+  my $list_id  = delete $request{listid};
+  my $email    = delete $request{email};
 
-  delete $request{listid};
-  delete $request{email};
-  my $json_request = encode_json \%request;
-
-  $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$email, $json_request);
+  $self->_rest(PUT => [ subscribers => $list_id ], { email => $email }, \%request);
 
   return $self->_build_results();
 }
 
 sub subscribers_import {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id = $request{listid};
-  
-  delete $request{listid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id."/import.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $list_id = delete $request{listid};
+
+  $self->_rest(POST => [ subscribers => $list_id, 'import' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub subscribers_history {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id   = $request{listid};
-  my $email     = $request{email};
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id."/history.".$self->{format}."?email=".$email);
-  
+  my ($self, %request) = @_;
+  my $list_id  = $request{listid};
+  my $email    = $request{email};
+
+  $self->_rest(GET => [ subscribers => $list_id, 'history' ], { email => $email });
+
   return $self->_build_results();
 }
 
 sub subscribers_unsubscribe {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id = $request{listid};
-  
-  delete $request{listid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id."/unsubscribe.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $list_id = delete $request{listid};
+
+  $self->_rest(POST => [ subscribers => $list_id, 'unsubscribe' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub subscribers_delete {
-  my $self = shift;
-  my (%request) = @_;
-  my $list_id   = $request{listid};
-  my $email     = $request{email};
+  my ($self, %request) = @_;
+  my $list_id  = $request{listid};
+  my $email    = $request{email};
 
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/subscribers/".$list_id.".".$self->{format}."?email=".$email);
+  $self->_rest(DELETE => [ subscribers => $list_id ], { email => $email });
 
   return $self->_build_results();
 }
@@ -1054,142 +927,112 @@ sub subscribers_delete {
 sub templates {
   my $self = shift;
 
-  if ( scalar(@_) == 1 ) { #get the template details
+  if ( @_ == 1 ) { #get the template details
     my $template_id = $_[0];
-    $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/templates/".$template_id.".".$self->{format});
-    
+    $self->_rest(GET => [ templates => $template_id ]);
+
     return $self->_build_results();
   }
   else {
     my (%request) = @_;
     if ( $request{templateid} ) { #update the template
-      my $template_id = $request{templateid};
-      
-      delete $request{templateid};
-      my $json_request = encode_json \%request;
-      
-      $self->{client}->PUT($self->{protocol}.$self->{domain}."/api/v3/templates/".$template_id.".".$self->{format}, $json_request);
-      
+      my $template_id = delete $request{templateid};
+
+      $self->_rest(PUT => [ templates => $template_id ], undef, \%request);
+
       return $self->_build_results();
     }
     elsif ( $request{clientid} ) { #create a template
-      my $client_id = $request{clientid};
-      
-      delete $request{clientid};
-      my $json_request = encode_json \%request;
-      
-      $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/templates/".$client_id.".".$self->{format}, $json_request);
-      
+      my $client_id = delete $request{clientid};
+
+      $self->_rest(POST => [ templates => $client_id ], undef, \%request);
+
       return $self->_build_results();
     }
   }
 }
 
 sub templates_delete {
-  my $self = shift;
-  my $template_id = $_[0];
-  
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/templates/".$template_id.".".$self->{format});
-  
+  my ($self, $template_id) = @_;
+
+  $self->_rest(DELETE => [ templates  => $template_id ]);
+
   return $self->_build_results();
 }
 
 sub campaigns {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
-  
-  delete $request{clientid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$client_id.".".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
+
+  $self->_rest(POST => [ campaigns  => $client_id ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub campaigns_fromtemplate {
-  my $self = shift;
-  my (%request) = @_;
-  my $client_id = $request{clientid};
+  my ($self, %request) = @_;
+  my $client_id = delete $request{clientid};
 
-  delete $request{clientid};
-  my $json_request = encode_json \%request;
+  $self->_rest(POST => [ campaigns  => $client_id, 'fromtemplate' ], undef, \%request);
 
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$client_id."/fromtemplate.".$self->{format}, $json_request);
-  
   return $self->_build_results();
 }
 
 sub campaigns_send {
-  my $self = shift;
-  my (%request) = @_;
-  my $campaign_id = $request{campaignid};
-  
-  delete $request{campaignid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/send.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $campaign_id = delete $request{campaignid};
+
+  $self->_rest(POST => [ campaigns  => $campaign_id, 'send' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub campaigns_unschedule {
-  my $self = shift;
-  my (%request) = @_;
-  my $campaign_id = $request{campaignid};
+  my ($self, %request) = @_;
+  my $campaign_id = delete $request{campaignid};
 
-  delete $request{campaignid};
-  my $json_request = encode_json \%request;
-
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/unschedule.".$self->{format}, $json_request);
+  $self->_rest(POST => [ campaigns  => $campaign_id, 'unschedule' ], undef, \%request);
 
   return $self->_build_results();
 }
 
 sub campaigns_sendpreview {
-  my $self = shift;
-  my (%request) = @_;
-  my $campaign_id = $request{campaignid};
-  
-  delete $request{campaignid};
-  my $json_request = encode_json \%request;
-  
-  $self->{client}->POST($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/sendpreview.".$self->{format}, $json_request);
-  
+  my ($self, %request) = @_;
+  my $campaign_id = delete $request{campaignid};
+
+  $self->_rest(POST => [ campaigns  => $campaign_id, 'sendpreview' ], undef, \%request);
+
   return $self->_build_results();
 }
 
 sub campaigns_summary {
-  my $self = shift;
-  my $campaign_id = $_[0];
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/summary.".$self->{format});
-  
+  my ($self, $campaign_id) = @_;
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'summary' ]);
+
   return $self->_build_results();
 }
 
 sub campaigns_emailclientusage {
-  my $self = shift;
-  my $campaign_id = $_[0];
+  my ($self, $campaign_id) = @_;
 
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/emailclientusage.".$self->{format});
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'emailclientusage' ]);
 
   return $self->_build_results();
 }
 
 sub campaigns_listsandsegments {
-  my $self = shift;
-  my $campaign_id = $_[0];
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id."/listsandsegments.".$self->{format});
-  
+  my ($self, $campaign_id) = @_;
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'listsandsegments' ]);
+
   return $self->_build_results();
 }
 
 sub campaigns_recipients {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $campaign_id = delete $input{campaignid};
+
   unless( Params::Util::_POSINT($input{page}) ) {
     $input{page} = 1;
   }
@@ -1202,16 +1045,16 @@ sub campaigns_recipients {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/recipients.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'recipients' ], \%input);
+
   return $self->_build_results();
 }
 
 sub campaigns_bounces {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $campaign_id = delete $input{campaignid};
+
   unless( Params::Util::_POSINT($input{page}) ) {
     $input{page} = 1;
   }
@@ -1224,16 +1067,16 @@ sub campaigns_bounces {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/bounces.".$self->{format}."?page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'bounces' ], \%input);
+
   return $self->_build_results();
 }
 
 sub campaigns_opens {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $campaign_id = delete $input{campaignid};
+
   unless( Params::Util::_POSINT($input{page}) ) {
     $input{page} = 1;
   }
@@ -1246,16 +1089,16 @@ sub campaigns_opens {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/opens.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'opens' ], \%input);
+
   return $self->_build_results();
 }
 
 sub campaigns_clicks {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $campaign_id = delete $input{campaignid};
+
   unless( Params::Util::_POSINT($input{page}) ) {
     $input{page} = 1;
   }
@@ -1268,16 +1111,16 @@ sub campaigns_clicks {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/clicks.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'clicks' ], \%input);
+
   return $self->_build_results();
 }
 
 sub campaigns_unsubscribes {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $campaign_id = delete $input{campaignid};
+
   unless( Params::Util::_POSINT($input{page}) ) {
     $input{page} = 1;
   }
@@ -1290,16 +1133,16 @@ sub campaigns_unsubscribes {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/unsubscribes.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'unsubscribes' ], \%input);
+
   return $self->_build_results();
 }
 
 sub campaigns_spam {
-  my $self = shift;
-  my (%input) = @_;
-  
+  my ($self, %input) = @_;
+  my $campaign_id = delete $input{campaignid};
+
   unless( Params::Util::_POSINT($input{page}) ) {
     $input{page} = 1;
   }
@@ -1312,29 +1155,114 @@ sub campaigns_spam {
   unless( Params::Util::_STRING($input{orderdirection}) && ($input{orderdirection} eq 'asc' || $input{orderdirection} eq 'desc')) {
     $input{orderdirection} = 'asc';
   }
-  
-  $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$input{campaignid}."/spam.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
-  
+
+  $self->_rest(GET => [ campaigns  => $campaign_id, 'spam' ], \%input);
+
   return $self->_build_results();
 }
 
 sub campaigns_delete {
-  my $self = shift;
-  my $campaign_id = $_[0];
-  
-  $self->{client}->DELETE($self->{protocol}.$self->{domain}."/api/v3/campaigns/".$campaign_id.".".$self->{format});
-  
+  my ($self, $campaign_id) = @_;
+
+  $self->_rest(DELETE => [ campaigns => $campaign_id ]);
+
   return $self->_build_results();
 }
 
 sub _build_results {
-  my ($self) = @_;
-  my $client = $self->{client};
-  my $results;
-  $results->{response}  = $self->decode( $client->responseContent() );
-  $results->{code}      = $client->responseCode();
-  $results->{headers}   = +{ map { $_ => scalar $client->responseHeader($_) } $client->responseHeaders() };
-  return $results;
+  my ($self, $client) = @_;
+  $client ||= $self->{client};
+
+  my %results = (
+    response => $self->decode( $client->responseContent() ),
+    code     => $client->responseCode(),
+    headers  => +{ map { $_ => scalar $client->responseHeader($_) } $client->responseHeaders() },
+  );
+
+  return \%results;
+}
+
+#   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/unsubscribed.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
+
+# The _build_uri method takes two parameters:
+# $path is either an array of path components,
+#       or a string which converts to a 1 element array
+# $query is either an array of query_form parameters
+#       or a hash of same
+# A URI object is returned
+sub _build_uri {
+  my ($self, $path, $query) = @_;
+
+  unless (_ARRAY($path)) {
+    if (_STRING($path)) {
+      $path = [ $path ];
+
+    } else {
+      croak "Unable to parse URL recipe";
+    }
+  }
+
+  my $uri = $self->{base_uri}->clone;
+
+  @$path = (@{ $self->{base_path} }, @$path);
+  # specify the type as a file-extension to the last path segment
+  $path->[-1] .= ".$self->{format}";
+  $uri->path_segments(@$path);
+
+  if (_HASH($query)) {
+    $uri->query_form([ map { $_ => $query->{$_} } sort keys %$query ], '&');
+
+  } elsif (_ARRAY($query)) {
+    $uri->query_form($query, '&');
+  }
+
+  return $uri;
+}
+
+# The _rest method takes either a list of parameters or a single hashref
+# If a list, they are interpreted in order as method, path, query, body, headers
+#   where method is the HTTP/REST method to use
+#   path is the path component of the URL to call, appended to the REST API base
+#        it can also be an array reference used to construct the path
+#   query is the query component of the URL to call, it can be a hashref
+#   body is the body of the HTTP request, for PUT/PATCH/POST methods
+#        it can be a hashref which will be json encoded
+#
+# If the first parameter to this function is a hashref, the values correspond to
+# keys of those names: method, path, query, body, headers
+#
+# The method and path parameters are required
+#
+# A call to the REST::Client instance is built and performed, the result
+# of which is returned.
+sub _rest {
+  my $self = shift;
+  my $params;
+  if (Params::Util::_HASH($_[0])) {
+    $params = shift;
+
+  } else {
+    $params = {};
+    @$params{qw(method path query body headers)} = @_;
+  }
+
+  my $method = $params->{method};
+  my $uri = $self->_build_uri($params->{path}, $params->{query});
+
+  my @args = ($uri->as_string);
+  if ($method =~ /^(?:PUT|PATCH|POST)$/) {
+    if (ref $params->{body}) {
+      my $body = encode_json $params->{body};
+      push @args, $body;
+
+	} else {
+      push @args, $params->{body};
+    }
+  }
+
+  push @args, $params->{headers} if defined $params->{headers};
+
+  return $self->{client}->$method(@args);
 }
 
 1;
@@ -1463,7 +1391,7 @@ All the following methods return a hash containing the Campaign Monitor response
 L<Getting your clients|http://www.campaignmonitor.com/api/account/#getting_your_clients>
 
   my $clients = $cm->account_clients();
-  
+
 L<Creating a client|http://www.campaignmonitor.com/api/clients/#creating_a_client>
 
   my $client = $cm->account_clients((
@@ -1501,10 +1429,10 @@ L<Getting valid timezones|http://www.campaignmonitor.com/api/account/#getting_ti
 L<Getting current date|http://www.campaignmonitor.com/api/account/#getting_systemdate>
 
   my $systemdate = $cm->account_systemdate();
-  
-  
-  
-=head2 account_addadmin 
+
+
+
+=head2 account_addadmin
 
 L<Adds a new administrator to the account. An invitation will be sent to the new administrator via email.|http://www.campaignmonitor.com/api/account/#adding_an_admin>
 
@@ -1512,12 +1440,12 @@ L<Adds a new administrator to the account. An invitation will be sent to the new
     'EmailAddress'          => "jane\@example.com",
     'Name'                  => "Jane Doe"
     ));
-  
-=head2 account_updateadmin 
+
+=head2 account_updateadmin
 
 L<Updates the email address and/or name of an administrator.|http://www.campaignmonitor.com/api/account/#updating_an_admin>
 
-  my $admin_email = $cm->account_updateadmin((    
+  my $admin_email = $cm->account_updateadmin((
     'email'         => "jane\@example.com",
     'EmailAddress'          => "jane.new\@example.com",
     'Name'                  => "Jane Doeman"
@@ -1528,31 +1456,31 @@ L<Updates the email address and/or name of an administrator.|http://www.campaign
 L<Contains a list of all (active or invited) administrators associated with a particular account.|http://www.campaignmonitor.com/api/account/#getting_account_admins>
 
   my $admins = $cm->account_getadmins();
-  
+
 =head2 account_getadmin
 
 L<Returns the details of a single administrator associated with an account. |http://www.campaignmonitor.com/api/account/#getting_account_admin>
 
-  my $admin_details = $cm->account_getadmin($email);  
-  
+  my $admin_details = $cm->account_getadmin($email);
+
 =head2 account_deleteadmin
 
 L<Changes the status of an active administrator to a deleted administrator.|http://www.campaignmonitor.com/api/account/#deleting_an_admin>
 
-  my $result = $cm->account_deleteadmin($admin_email);  
-  
-  
+  my $result = $cm->account_deleteadmin($admin_email);
+
+
 =head2 admin_setprimarycontact
 
 L<Sets the primary contact for the account to be the administrator with the specified email address.|http://www.campaignmonitor.com/api/account/#setting_primary_contact>
 
-  my $primarycontact_email = $cm->account_setprimarycontact($admin_email);    
+  my $primarycontact_email = $cm->account_setprimarycontact($admin_email);
 
 =head2 account_getprimarycontact
 
 L<Returns the email address of the administrator who is selected as the primary contact for this account.|http://www.campaignmonitor.com/api/account/#getting_primary_contact>
 
-  my $primarycontact_email = $cm->account_getprimarycontact();    
+  my $primarycontact_email = $cm->account_getprimarycontact();
 
 =head2 campaigns
 
@@ -1560,7 +1488,7 @@ L<Creating a draft campaign|http://www.campaignmonitor.com/api/campaigns/#creati
 
   my $campaign = $cm->campaigns((
     'clientid'   => 'b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
-    'ListIDs'    => [    
+    'ListIDs'    => [
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1'
            ],
@@ -1651,7 +1579,7 @@ content of a template with markup similar to the following:
       </repeater>
       <p><unsubscribe>Unsubscribe</unsubscribe></p>
     </body>
-  </html>     
+  </html>
 
 
   my $campaign = $cm->campaigns_fromtemplate((
@@ -1665,7 +1593,7 @@ content of a template with markup similar to the following:
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1'
      ],
-    'SegmentIDs'       => [   
+    'SegmentIDs'       => [
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
       'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1'
      ],
@@ -1729,7 +1657,7 @@ L<Campaign email client usage|http://www.campaignmonitor.com/api/campaigns/#camp
 L<Campaign lists and segments|http://www.campaignmonitor.com/api/campaigns/#campaign_listsandsegments>
 
   my $campaign_listsandsegments = $cm->campaigns_listsandsegments($campaign_id);
-  
+
 =head2 campaigns_recipients
 
 L<Campaign recipients|http://www.campaignmonitor.com/api/campaigns/#campaign_recipients>
@@ -1817,7 +1745,7 @@ L<Deleting a draft|http://www.campaignmonitor.com/api/campaigns/#deleting_a_camp
 L<Getting a client's details|http://www.campaignmonitor.com/api/clients/#getting_a_client>
 
   my $client_details = $cm->client_clientid($client_id);
-  
+
 =head2 client_campaigns
 
 L<Getting sent campaigns|http://www.campaignmonitor.com/api/clients/#getting_client_campaigns>
@@ -1868,7 +1796,7 @@ L<Getting suppression list|http://www.campaignmonitor.com/api/clients/#getting_c
     'orderfield'     => 'email',
     'orderdirection' => 'asc',
   ));
-  
+
 =head2 client_suppress
 
 L<Suppress email addresses|http://www.campaignmonitor.com/api/clients/#suppress_email_addresses>
@@ -1945,9 +1873,9 @@ L<Transfer credits to/from a client|http://www.campaignmonitor.com/api/clients/#
 L<Deleting a client|http://www.campaignmonitor.com/api/clients/#deleting_a_client>
 
   my $client_deleted = $cm->client_delete($client_id);
-  
-  
-=head2 client_addperson 
+
+
+=head2 client_addperson
 
 L<Adds a new person to the client.|http://www.campaignmonitor.com/api/clients/#adding_a_person>
 
@@ -1958,8 +1886,8 @@ L<Adds a new person to the client.|http://www.campaignmonitor.com/api/clients/#a
     'AccessLevel'           => 23,
     'Password'            => "safepassword"
     ));
-  
-=head2 client_updateperson 
+
+=head2 client_updateperson
 
 L<Updates any aspect of a person including their email address, name and access level..|http://www.campaignmonitor.com/api/clients/#updating_a_person>
 
@@ -1977,7 +1905,7 @@ L<Updates any aspect of a person including their email address, name and access 
 L<Contains a list of all (active or invited) people associated with a particular client.|http://www.campaignmonitor.com/api/clients/#getting_client_people>
 
   my $client_access-settings = $cm->client_getpeople($client_id);
-  
+
 =head2 client_getperson
 
 L<Returns the details of a single person associated with a client. |http://www.campaignmonitor.com/api/clients/#getting_client_person>
@@ -1985,8 +1913,8 @@ L<Returns the details of a single person associated with a client. |http://www.c
   my $person_details = $cm->client_getperson((
     'clientid'          => $client_id,
     'email'           => "joe\@example.com",
-    )); 
-  
+    ));
+
 =head2 client_deleteperson
 
 L<Contains a list of all (active or invited) people associated with a particular client.|http://www.campaignmonitor.com/api/clients/#deleting_a_person>
@@ -1994,9 +1922,9 @@ L<Contains a list of all (active or invited) people associated with a particular
   my $result = $cm->client_deleteperson((
     'clientid'          => $client_id,
     'email'           => "joe\@example.com",
-    )); 
-  
-  
+    ));
+
+
 =head2 client_setprimarycontact
 
 L<Sets the primary contact for the client to be the person with the specified email address.|http://www.campaignmonitor.com/api/clients/#setting_primary_contact>
@@ -2004,15 +1932,15 @@ L<Sets the primary contact for the client to be the person with the specified em
   my $primarycontact_email = $cm->client_setprimarycontact((
     'clientid'          => $client_id,
     'email'           => "joe\@example.com",
-    ));   
+    ));
 
 =head2 client_getprimarycontact
 
 L<Returns the email address of the person who is selected as the primary contact for this client.|http://www.campaignmonitor.com/api/clients/#getting_primary_contact>
 
-  my $primarycontact_email = $cm->client_getprimarycontact($client_id);   
-    
-  
+  my $primarycontact_email = $cm->client_getprimarycontact($client_id);
+
+
 =head2 lists
 
 L<Creating a list|http://www.campaignmonitor.com/api/lists/#creating_a_list>
@@ -2025,7 +1953,7 @@ L<Creating a list|http://www.campaignmonitor.com/api/lists/#creating_a_list>
     'ConfirmedOptIn'          => 'false',
     'ConfirmationSuccessPage' => 'http://www.example.com/joined.html',
   ));
-  
+
 =head2 list_listid
 
 L<List details|http://www.campaignmonitor.com/api/lists/#getting_list_details>
@@ -2173,7 +2101,7 @@ L<Deleting a custom field|http://www.campaignmonitor.com/api/lists/#deleting_a_c
 L<Deleting a list|http://www.campaignmonitor.com/api/lists/#deleting_a_list>
 
   my $deleted_list = $cm->list_delete($list_id);
-  
+
 =head2 list_webhooks
 
 L<List webhooks|http://www.campaignmonitor.com/api/lists/#getting_list_webhooks>
@@ -2320,7 +2248,7 @@ L<Getting segment subscribers|http://www.campaignmonitor.com/api/segments/#getti
 L<Deleting a segment|http://www.campaignmonitor.com/api/segments/#deleting_a_segment>
 
   my $deleted_segment = $cm->segment_delete($segment_id);
-  
+
 =head2 segment_delete_rules
 
 L<Deleting a segment's rules|http://www.campaignmonitor.com/api/segments/#deleting_segment_rules>
@@ -2492,7 +2420,7 @@ L<Deleting a template|http://www.campaignmonitor.com/api/templates/#deleting_a_t
 In order to run the full test suite you will need to provide an API Key. This can be done in the following way.
 
   cpan CAMPAIGN_MONITOR_API_KEY=<your_api_key> Net::CampaignMonitor
-  
+
 If you do not do this almost all of the tests will be skipped.
 
 =head1 BUGS
@@ -2516,3 +2444,13 @@ Copyright (c) 2011, Jeffery Candiloro  E<lt>jeffery@cpan.org<gt>.  All rights re
 This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the LICENSE file included with this module.
+
+=cut
+
+# Local Variables:
+# mode: cperl
+# cperl-indent-level: 2
+# cperl-close-paren-offset: -2
+# indent-tabs-mode: nil
+# tab-width: 2
+# End:
