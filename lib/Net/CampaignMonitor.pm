@@ -134,7 +134,7 @@ sub refresh_token {
   }
   my $oauth_client = Net::CampaignMonitor->create_oauth_client();
   my $body = 'grant_type=refresh_token&refresh_token='.uri_escape($self->{refresh_token});
-  $oauth_client->POST($self->{protocol}.$self->{domain}.'/oauth/token', $body,
+  $oauth_client->POST('https://'.$Net::CampaignMonitor::CAMPAIGN_MONITOR_DOMAIN.'/oauth/token', $body,
     {'Content-type' => 'application/x-www-form-urlencoded'});
   my $result = $self->decode($oauth_client->responseContent());
 
@@ -1181,8 +1181,6 @@ sub _build_results {
 
   return \%results;
 }
-
-#   $self->{client}->GET($self->{protocol}.$self->{domain}."/api/v3/lists/".$input{listid}."/unsubscribed.".$self->{format}."?date=".$input{date}."&page=".$input{page}."&pagesize=".$input{pagesize}."&orderfield=".$input{orderfield}."&orderdirection=".$input{orderdirection});
 
 # The _build_uri method takes two parameters:
 # $path is either an array of path components,
