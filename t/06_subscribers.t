@@ -42,7 +42,7 @@ SKIP: {
       }
     ],
     'Name'         => 'New Subscriber',
-    'EmailAddress' => 'subscriber@example.com',
+    'EmailAddress' => 'subscriber+stuff@example.com',
     'listid'       => $list_id,
   );
 
@@ -67,7 +67,7 @@ SKIP: {
     'Name'         => 'Renamed Subscriber',
     'EmailAddress' => 'subscriber@example.com',
     'listid'       => $list_id,
-    'email'        => 'subscriber@example.com'
+    'email'        => 'subscriber+stuff@example.com'
   );
 
   my %new_subscribers = (
