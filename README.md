@@ -120,19 +120,5 @@ perldoc Net::CampaignMonitor
 ```
 
 ## Contributing
-1. Fork the repository
-2. Make your changes, including tests for your changes.
-3. Ensure that the build passes, by running:
 
-    ```
-    export CAMPAIGN_MONITOR_API_KEY={Your API key to use for running the tests}
-    export CAMPAIGN_MONITOR_ACCESS_TOKEN={Your OAuth access token for running the tests}
-    export CAMPAIGN_MONITOR_REFRESH_TOKEN={Your OAuth refresh token for running the tests}
-    cpanm --quiet --installdeps --notest .
-    perl Makefile.PL && make test
-    ```
-
-    CI runs on: `5.10`, `5.12`, `5.14`, and `5.16`.
-
-4. It should go without saying, but do not increment the version number in your commits.
-5. Submit a pull request.
+Please check the [guidelines for contributing](https://github.com/campaignmonitor/createsend-perl/blob/master/CONTRIBUTING.md) to this repository.
