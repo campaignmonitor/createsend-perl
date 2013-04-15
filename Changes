@@ -1,3 +1,6 @@
+v2.1.2 Mon 15 Apr 2013
+  - Fixed a bug in sub client_listsforemail which was causing an incorrect API call to be made.
+
 v2.1.1 Tue 2 Apr 2013
   - Fixed URL encoding bug.
 
