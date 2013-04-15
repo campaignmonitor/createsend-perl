@@ -325,7 +325,7 @@ sub client_listsforemail {
   my $client_id  = $request{clientid};
   my $email      = $request{email};
 
-  $self->_rest(GET => [ clients => $client_id, 'suppressionlist' ]);
+  $self->_rest(GET => [ clients => $client_id, 'listsforemail' ], { email => $email });
 
   return $self->_build_results();
 }
