@@ -280,6 +280,14 @@ sub account_getprimarycontact {
   return $self->_build_results();
 }
 
+sub account_externalsession {
+  my ($self, %request) = @_;
+
+  $self->_rest(PUT => 'externalsession', undef, \%request);
+
+  return $self->_build_results();
+}
+
 sub client_clientid {
   my ($self, $client_id) = @_;
 
@@ -1479,6 +1487,18 @@ L<Sets the primary contact for the account to be the administrator with the spec
 L<Returns the email address of the administrator who is selected as the primary contact for this account.|http://www.campaignmonitor.com/api/account/#getting_primary_contact>
 
   my $primarycontact_email = $cm->account_getprimarycontact();
+
+=head2 account_externalsession
+
+L<Returns a URL which initiates a new external Campaign Monitor login session for the user with the given email.|http://www.campaignmonitor.com/api/account/#single_sign_on>
+
+  my $external_session = $cm->account_externalsession((
+    'Email'        => 'example@example.com',
+    'Chrome'       => 'None',
+    'Url'          => '/subscribers/search?search=belle@example.com',
+    'IntegratorID' => 'a1b2c3d4e5f6',
+    'ClientID'     => 'aaa111bbb222ccc333'
+  ));
 
 =head2 campaigns
 
