@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Params::Util qw{_STRING};
 use Net::CampaignMonitor;
 
@@ -19,7 +19,7 @@ if ( Params::Util::_STRING($ENV{'CAMPAIGN_MONITOR_API_KEY'}) ) {
 }
 
 SKIP: {
-	skip 'Invalid API Key supplied', 11 if $api_key eq '';
+	skip 'Invalid API Key supplied', 12 if $api_key eq '';
 
 	ok( $cm->account_clients()->{'code'} eq '200', 'Clients' );
 	ok( $cm->account_billingdetails()->{'code'} eq '200', 'Billing details' );
@@ -32,6 +32,14 @@ SKIP: {
 		'Name'                 	=> "Jane Doe"
 	);
 
+	my %session_options = (
+		'Email'        => "jane.admin+stuff\@example.com",
+    'Chrome'       => 'All',
+    'Url'          => '/subscribers',
+    'IntegratorID' => 'b92b429143b836fb',
+    'ClientID'     => ''
+	);
+
 	my %update_admin = (
 		'email'                	=> "jane.admin+stuff\@example.com",
 		'EmailAddress'         	=> "jane.new\@example.com",
@@ -41,6 +49,7 @@ SKIP: {
 	my $admin_email = "jane.new\@example.com";
 
 	ok( $cm->account_addadmin(%new_admin)->{code} eq '201', 'Added new admin' );
+  ok( $cm->account_externalsession(%session_options)->{code} eq '200', 'Got external session url' );
 	ok( $cm->account_updateadmin(%update_admin)->{code} eq '200', 'Updated admin' );
 	ok( $cm->account_getadmins()->{code} eq '200', 'Got admins' );
 	ok( $cm->account_getadmin($admin_email)->{code} eq '200', 'Got admin' );
