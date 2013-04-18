@@ -49,7 +49,10 @@ SKIP: {
 	my $admin_email = "jane.new\@example.com";
 
 	ok( $cm->account_addadmin(%new_admin)->{code} eq '201', 'Added new admin' );
-  ok( $cm->account_externalsession(%session_options)->{code} eq '200', 'Got external session url' );
+  # It is not possible to test the success case for account_externalsession,
+  # because the users in the account are not verified (hence the expectation
+  # that the status code is a 400).
+  ok( $cm->account_externalsession(%session_options)->{code} eq '400','Received bad request response as expected when attempting to get the external session URL' );
 	ok( $cm->account_updateadmin(%update_admin)->{code} eq '200', 'Updated admin' );
 	ok( $cm->account_getadmins()->{code} eq '200', 'Got admins' );
 	ok( $cm->account_getadmin($admin_email)->{code} eq '200', 'Got admin' );
