@@ -1,3 +1,7 @@
+v2.2.1 Wed 8 May 2013
+
+* Added Test::Exception dependency correctly.
+
 v2.2.0 Tue 16 Apr 2013
 
 * Added support for single sign on (http://www.campaignmonitor.com/api/account/#single_sign_on) which allows initiation of external login sessions to Campaign Monitor.
