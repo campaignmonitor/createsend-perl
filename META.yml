@@ -26,6 +26,7 @@ requires:
   MIME::Base64: 3.13
   REST::Client: 171
   XML::Simple: 2.18
+  Test::Exception: 0.32
   perl: 5.8.5
 resources:
   license: http://dev.perl.org/licenses/
