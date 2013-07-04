@@ -106,6 +106,10 @@ sub create_rest_client {
 
   my $ua = LWP::UserAgent->new;
   $ua->agent($self->{useragent});
+  if ($self->{secure}) {
+   $ua->ssl_opts( verify_hostname => 1 );
+  }
+  
   if (exists $self->{access_token}) {
     $ua->default_header('Authorization' => 'Bearer '.$self->{access_token});
   } elsif (exists $self->{api_key}) {
