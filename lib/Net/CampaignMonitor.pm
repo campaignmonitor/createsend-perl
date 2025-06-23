@@ -1862,7 +1862,6 @@ L<Setting PAYG billing|http://www.campaignmonitor.com/api/clients/#setting_payg_
     'MarkupPercentage'       => '20',
     'MarkupOnDelivery'       => '5',
     'MarkupPerRecipient'     => '4',
-    'MarkupOnDesignSpamTest' => '3',
   ));
 
 =head2 client_setmonthlybilling
